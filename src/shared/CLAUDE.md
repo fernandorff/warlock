@@ -27,6 +27,8 @@ Mensagem nova do cliente: variante em `ClientMsg` → `case` em `parseClientMess
 
 ## Snapshot (`snapshot.ts`)
 
+- Ilusão recebe forças pelo mesmo moveWizard do corpo real; copy.walk e pushVel separados. Gravidade usa puxão de corpo, Magnetizar não vira a caminhada, Bola de neve usa arraste no contato e explosão só ao explodir. Movimenta cópias antes dos impactos para não ganhar passo extra pela ordem da lista. Não mata nem oculta a cópia ao receber dano.
+
 - Proposta Escudo: impede dano e recebe60%dos novos impulsos e durações de stun/root/slow. `statusDuration` decide no instante do impacto; ativar depois não recalcula efeitos prévios. Proteção geral, não exceção entre duas magias. Sem mudança do Meteoro nesta PR.
 
 - Recuperação pós-knockback (`kr`) só começa quando impulso físico cruza STUN_SPEED: zera residual e retoma50→100% em1s, +10pp/0,2s. Terminar um stun sem impulso não aciona recuperação; teste dedicado cobre essa separação. Cliente relê kr só por snapshot novo, nunca por quadro.
