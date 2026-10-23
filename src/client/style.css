@@ -244,7 +244,10 @@ button.kick:hover { background: rgba(255, 106, 77, .15); }
 .radial-stage > button.on { background: var(--sel-bg); border-color: var(--gold-line); color: var(--gold-pale); }
 .radial-stage > .radial-center { left: 50%; top: 50%; width: 18%; aspect-ratio: 1; border-radius: 50%; font-size: 1.8rem; background: color-mix(in srgb, var(--ink) 40%, transparent); border-color: var(--gold-line); }
 /* painel da sandbox: regras, bots e arena; no celular cabe na largura da tela */
-.sandbox-panel { width: min(300px, calc(100vw - 24px)); }
+.sandbox-panel { width: min(640px, calc(100vw - 24px)); }
+/* teste local dos efeitos sonoros (issue #203): um bloco por magia com as linhas Lançar e Impacto */
+.sons-magia { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-top: 1px solid var(--gold-line); }
+.sons-magia .stats-tabs { flex-wrap: wrap; }
 .sandbox-check, .sandbox-row { display: flex; align-items: center; gap: 8px; }
 .sandbox-row select { flex: 1; min-width: 0; }
 .sandbox-bots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }

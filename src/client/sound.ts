@@ -3,15 +3,32 @@
 import { tauntAudioSrc } from '../shared/taunts.ts';
 import { store } from './store.ts';
 
-export type SoundKind = 'fireball' | 'lightning' | 'homing' | 'shield' | 'teleport' | 'hit' | 'hitLight' | 'hitHeavy' | 'reflect' | 'death' | 'splash' | 'shrink' | 'beep' | 'go' | 'click'
+export type SoundKind = 'fireball' | 'lightning' | 'homing' | 'shield' | 'teleport' | 'frost' | 'swap' | 'grip' | 'meteor' | 'rush' | 'cluster' | 'boomerang' | 'thrust' | 'gravity'
+  | 'rockpillar' | 'bouncer' | 'drain' | 'illusion' | 'magnetize' | 'recharge' | 'alteration' | 'link' | 'windwalk' | 'splitter' | 'warpzone' | 'hit' | 'hitLight' | 'hitHeavy' | 'reflect' | 'death' | 'splash' | 'shrink' | 'beep' | 'go' | 'click'
   | 'winRound' | 'loseRound' | 'buy' | 'error' | 'ready' | 'hover';
 
 const FILES: Partial<Record<SoundKind, string[]>> = {
-  fireball: ['fireball'], lightning: ['lightning'], homing: ['homing'], shield: ['shield'], teleport: ['teleport'],
+  fireball: ['fireball'], lightning: ['lightning'], homing: ['homing'], shield: ['shield'], teleport: ['teleport'], frost: ['frost'],
+  swap: ['swap'], grip: ['grip'], meteor: ['meteor'], rush: ['rush'], cluster: ['cluster'], boomerang: ['boomerang'], thrust: ['thrust'], gravity: ['gravity'], rockpillar: ['rockpillar'],
+  bouncer: ['bouncer'], drain: ['drain'], illusion: ['illusion'], magnetize: ['magnetize'], recharge: ['recharge'], alteration: ['alteration'], link: ['link'], windwalk: ['windwalk'],
+  splitter: ['splitter'], warpzone: ['warpzone'],
   hit: ['hit', 'explode'], hitLight: ['hit'], hitHeavy: ['hit', 'explode'], reflect: ['shield'], death: ['explode'], click: ['click'], go: ['confirm'],
 };
 // golpe fraco mais agudo, golpe forte mais grave
 const RATE: Partial<Record<SoundKind, number>> = { hitLight: 1.25, hitHeavy: 0.78 };
+
+// música da partida escolhida em Configurações → Som (pedido do Fernando, 20/10); troca na hora
+export const MUSIC_TRACKS = { battle: 'Epic Boss Battle', pursuit: 'Determined Pursuit' } as const;
+export type MusicTrack = keyof typeof MUSIC_TRACKS;
+export const musicTrack = (): MusicTrack => (store.get('warlock:music-track') === 'pursuit' ? 'pursuit' : 'battle');
+let musicEl: HTMLAudioElement | null = null;
+export function setMusicTrack(k: MusicTrack) {
+  store.set('warlock:music-track', k);
+  if (!musicEl) return;
+  const playing = !musicEl.paused;
+  musicEl.src = `/music/${k}.mp3`;
+  if (playing) void musicEl.play().catch(() => {});
+}
 
 // volumes de 0 a 1, separados para efeitos e música, guardados no navegador: os mesmos no menu inicial e na sala (issue #128).
 // Quem tinha deixado mudo na versão antiga começa em zero
@@ -35,7 +52,7 @@ export function createSound(musicDefault?: number) {
   let noise: AudioBuffer | null = null;
   let master: GainNode | null = null;
   const buffers = new Map<string, AudioBuffer>();
-  const music = new Audio('/music/battle.mp3');
+  const music = (musicEl = new Audio(`/music/${musicTrack()}.mp3`));
   music.loop = true;
   music.preload = 'none'; // só baixa quando a partida toca (o lobby também cria o som, para o hover e o clique)
   let lava: AudioBufferSourceNode | null = null;
@@ -157,6 +174,12 @@ export function createSound(musicDefault?: number) {
     setAmbience(on: boolean) {
       wantAmbience = on;
       syncAmbience();
+    },
+    // teste local dos efeitos sonoros (issue #203, em localhost e no ambiente do PR): toca public/sfx/<nome>.mp3 pelo mesmo caminho das magias
+    async preview(name: string, volume = 1) {
+      if (!ctx || volumes().sfx === 0 || ctx.state !== 'running') return;
+      if (!buffers.has(name)) await load(name);
+      file(name, 0.8 * Math.max(0.05, Math.min(1, volume)));
     },
     // taunt: caminho do catálogo (public/sfx/taunt/<nome>.mp3 ou a gravação em public/taunts-local), carregado na primeira vez que alguém usa
     async taunt(name: string) {

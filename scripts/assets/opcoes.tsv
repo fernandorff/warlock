@@ -1,0 +1,75 @@
+fireball	1	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/spell_fire_07.ogg	0	0	0	fogo rpg 7
+fireball	2	/d/Projetos/warlock-assets/oga-fire-staff/extracted/LEGIT Audio_FIRE STAFF - FREE/Wavs/LEGIT_FIR_Fire_Staff 7-Audio.wav	0	0.9	0.25	cajado de fogo 7
+fireball	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/spell_fire_06.ogg	0	0	0	fogo rpg 6
+lightning	1	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/spell_02.ogg	0	0	0	feitiço rpg 2
+lightning	2	/d/Projetos/warlock-assets/lentikula-spell-impacts/extracted/Lightning Spell Impacts/Lightning Spell Impact 2.wav	0	1.2	0.25	raio lentikula 2
+lightning	3	/d/Projetos/warlock-assets/lentikula-spell-impacts/extracted/Lightning Spell Impacts/Lightning Spell Impact 4.wav	0	1.2	0.25	raio lentikula 4
+homing	1	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/spell_01.ogg	0	0	0	feitiço rpg 1
+homing	2	/d/Projetos/warlock-assets/oga-magicspell/magical_6_0.ogg	0	0	0	mágico 6
+homing	3	/d/Projetos/warlock-assets/oga-rpg-sound-pack/extracted/RPG Sound Pack/battle/magic1.wav	0	0	0	magia rpg pack
+meteor	1	/d/Projetos/warlock-assets/oga-fire-staff/extracted/LEGIT Audio_FIRE STAFF - FREE/Wavs/LEGIT_FIR_Fire_Staff 9-Audio.wav	0	1.5	0.3	cajado de fogo 9
+meteor	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/spell_fire_05.ogg	0	0	0	fogo rpg 5
+meteor	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/spell_fire_03.ogg	0	1.6	0.3	fogo rpg 3
+cluster	1	/d/Projetos/warlock-assets/oga-fire-staff/extracted/LEGIT Audio_FIRE STAFF - FREE/Wavs/LEGIT_FIR_Fire_Staff 11-Audio.wav	0	1.0	0.25	cajado de fogo 11
+cluster	2	/d/Projetos/warlock-assets/oga-fire-staff/extracted/LEGIT Audio_FIRE STAFF - FREE/Wavs/LEGIT_FIR_Fire_Staff 8-Audio.wav	0	0.9	0.25	cajado de fogo 8
+cluster	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/spell_fire_02.ogg	0	0	0	fogo rpg 2
+boomerang	1	/d/Projetos/warlock-assets/oga-swishes/extracted/swishes/swish-7.wav	0	0	0	vento 7
+boomerang	2	/d/Projetos/warlock-assets/oga-rpg-sound-pack/extracted/RPG Sound Pack/battle/swing.wav	0	0	0	golpe no ar
+boomerang	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/blade_03.ogg	0	0	0	lâmina 3
+bouncer	1	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/spring_04.ogg	0	0	0	mola 4
+bouncer	2	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/spring_05.ogg	0	0	0	mola 5
+bouncer	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/item_gem_02.ogg	0	0	0	gema 2
+recharge	1	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/item_gem_04.ogg	0	0	0	gema 4
+recharge	2	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/bell_02.ogg	0	0	0	sino 2
+recharge	3	/d/Projetos/warlock-assets/oga-rpg-sound-pack/extracted/RPG Sound Pack/interface/interface3.wav	0	0	0	interface 3
+splitter	1	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/glass_01.ogg	0	0	0	vidro 1
+splitter	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/item_gem_01.ogg	0	0	0	gema 1
+splitter	3	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/glass_02.ogg	0	0	0	vidro 2
+snowball	1	/d/Projetos/warlock-assets/oga-ice-spells/extracted/ice.wav	0	0	0	gelo bart
+snowball	2	/d/Projetos/warlock-assets/lentikula-spell-impacts/extracted/Ice Spell Impacts/Ice Spell Impact 4.wav	0	1.2	0.25	gelo lentikula 4
+snowball	3	/d/Projetos/warlock-assets/oga-ice-spells/extracted/coldsnap.wav	0	1.4	0.3	estalo de gelo
+teleport	1	/d/Projetos/warlock-assets/oga-teleport-spell/extracted/teleport.wav	0	0	0	teleporte ogrebane
+teleport	2	/d/Projetos/warlock-assets/oga-magicspell/magical_7_0.ogg	0	0	0	mágico 7
+teleport	3	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/weird_02.ogg	0	0	0	estranho 2
+swap	1	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/switch_02.ogg	0	0	0	interruptor 2
+swap	2	/d/Projetos/warlock-assets/oga-magicspell/magical_3.ogg	0	1.3	0.3	mágico 3
+swap	3	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/weird_03.ogg	0	0	0	estranho 3
+rush	1	/d/Projetos/warlock-assets/oga-swishes/extracted/swishes/swish-4.wav	0	0	0	vento 4
+rush	2	/d/Projetos/warlock-assets/oga-rpg-sound-pack/extracted/RPG Sound Pack/battle/swing3.wav	0	0	0	golpe no ar 3
+rush	3	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/slam_04.ogg	0	0	0	pancada 4
+thrust	1	/d/Projetos/warlock-assets/oga-rpg-sound-pack/extracted/RPG Sound Pack/battle/swing2.wav	0	0	0	golpe no ar 2
+thrust	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/blade_01.ogg	0	0	0	lâmina 1
+thrust	3	/d/Projetos/warlock-assets/kenney-rpg-audio/extracted/Audio/knifeSlice.ogg	0	0	0	faca cortando
+windwalk	1	/d/Projetos/warlock-assets/oga-swishes/extracted/swishes/swish-9.wav	0	0	0	vento 9
+windwalk	2	/d/Projetos/warlock-assets/oga-dark-magic/extracted/dark_magic/fout-02.flac	0	1.2	0.3	magia sombria 2
+windwalk	3	/d/Projetos/warlock-assets/kenney-rpg-audio/extracted/Audio/cloth1.ogg	0	0	0	pano
+shield	1	/d/Projetos/warlock-assets/oga-rpg-sound-pack/extracted/RPG Sound Pack/inventory/metal-ringing.wav	0	0	0	metal ressoando
+shield	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/metal_02.ogg	0	0	0	metal 2
+shield	3	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/gong_02.ogg	0	1.0	0.3	gongo
+alteration	1	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/weird_01.ogg	0	0	0	estranho 1
+alteration	2	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/switch_01.ogg	0	0	0	interruptor 1
+alteration	3	/d/Projetos/warlock-assets/oga-swishes/extracted/swishes/swish-3.wav	0	0	0	vento 3
+illusion	1	/d/Projetos/warlock-assets/oga-rpg-sound-pack/extracted/RPG Sound Pack/NPC/shade/shade3.wav	0	0	0	sombra 3
+illusion	2	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/weird_04.ogg	0	1.0	0.3	estranho 4
+illusion	3	/d/Projetos/warlock-assets/oga-dark-magic/extracted/dark_magic/fout-03.flac	0	1.2	0.3	magia sombria 3
+warpzone	1	/d/Projetos/warlock-assets/oga-dark-magic/extracted/dark_magic/fout-01.flac	0	1.4	0.3	magia sombria 1
+warpzone	2	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/weird_05.ogg	0	0	0	estranho 5
+warpzone	3	/d/Projetos/warlock-assets/oga-magicspell/magical_4.ogg	0	1.4	0.4	mágico 4
+rockpillar	1	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/item_stone_01.ogg	0	0	0	pedra 1
+rockpillar	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/stones_01.ogg	0	0	0	pedras 1
+rockpillar	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/stones_03.ogg	0	1.2	0.3	pedras 3
+grip	1	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/chain_01.ogg	0	0	0	corrente 1
+grip	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/creature_slime_01.ogg	0	0	0	gosma 1
+grip	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/lock_02.ogg	0	0	0	tranca 2
+gravity	1	/d/Projetos/warlock-assets/oga-gravity-inverter/extracted/gravity_inverter.ogg	0	0	0	inversor de gravidade
+gravity	2	/d/Projetos/warlock-assets/oga-earth-spell/extracted/Earth Element Magic Spell_3.ogg	0	1.4	0.3	magia de terra
+gravity	3	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/machine_02.ogg	0	0	0	máquina 2
+link	1	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/chain_03.ogg	0	0	0	corrente 3
+link	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/chain_02.ogg	0	0	0	corrente 2
+link	3	/d/Projetos/warlock-assets/kenney-rpg-audio/extracted/Audio/metalLatch.ogg	0	0	0	trinco
+magnetize	1	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/machine_01.ogg	0	0	0	máquina 1
+magnetize	2	/d/Projetos/warlock-assets/oga-100-cc0-sfx/extracted/spring_06.ogg	0	0	0	mola 6
+magnetize	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/metal_03.ogg	0	0	0	metal 3
+drain	1	/d/Projetos/warlock-assets/oga-energy-drain/extracted/qubodup-PowerDrain/ogg/qubodup-PowerDrain.ogg	0	1.2	0.3	drenar energia
+drain	2	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/creature_slime_03.ogg	0	0	0	gosma 3
+drain	3	/d/Projetos/warlock-assets/oga-80-cc0-rpg-sfx/extracted/creature_slime_04.ogg	0	0	0	gosma 4

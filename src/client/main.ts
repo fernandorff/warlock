@@ -31,7 +31,7 @@ import { createScene, type WizDraw } from './scene.ts';
 import { createSound, type SoundKind } from './sound.ts';
 import { store } from './store.ts';
 import { SANDBOX_START } from './train.ts';
-import { TEAM_NAMES, TOUCH, WATCH_JOIN, askName, banner, createRoomUi, curtain, renderLobby, screen, srcName, toast } from './ui.ts';
+import { TESTE_SONS, TEAM_NAMES, TOUCH, WATCH_JOIN, askName, banner, createRoomUi, curtain, renderLobby, screen, srcName, toast } from './ui.ts';
 import { botLevel, endResult, renderWizardState, sandboxVisibility, seatChanges } from './screen-data.ts';
 import { TAUNTS } from '../shared/taunts.ts';
 
@@ -61,15 +61,29 @@ const TEST_LINK = LOCAL || /^pr-\d+-warlock\./.test(location.hostname);
 const IR = (TEST_LINK && new URLSearchParams(location.search).get('ir')?.split(',')) || [];
 const IR_CONFIG = IR.find((p) => p.startsWith('config:'))?.slice(7);
 
-// som de cada magia: as novas reaproveitam os sons que já existem
+// som de cada magia: um arquivo para cada, nenhum repetido (a Bola de neve é o 'frost')
 const SPELL_SOUND: Record<SpellId, SoundKind> = {
   fireball: 'fireball', lightning: 'lightning', homing: 'homing', shield: 'shield', teleport: 'teleport',
-  swap: 'teleport', grip: 'lightning', meteor: 'fireball', rush: 'shield', cluster: 'fireball',
-  boomerang: 'homing', thrust: 'teleport', gravity: 'homing', rockpillar: 'shield', bouncer: 'lightning',
-  drain: 'homing', snowball: 'fireball', illusion: 'teleport', magnetize: 'lightning', recharge: 'homing',
-  alteration: 'teleport', link: 'lightning', windwalk: 'shield', splitter: 'fireball', warpzone: 'shield',
+  swap: 'swap', grip: 'grip', meteor: 'meteor', rush: 'rush', cluster: 'cluster',
+  boomerang: 'boomerang', thrust: 'thrust', gravity: 'gravity', rockpillar: 'rockpillar', bouncer: 'bouncer',
+  drain: 'drain', snowball: 'frost', illusion: 'illusion', magnetize: 'magnetize', recharge: 'recharge',
+  alteration: 'alteration', link: 'link', windwalk: 'windwalk', splitter: 'splitter', warpzone: 'warpzone',
   scourge: 'homing', pact: 'shield', // os sons que tinham como item ativo
 };
+
+// teste local dos efeitos sonoros (issue #203, em localhost e no ambiente do PR): a opção escolhida no painel do Sandbox toca no lançamento da magia
+function castSound(sound: ReturnType<typeof createSound>, s: SpellId, volume = 1) {
+  const k = TESTE_SONS ? store.json<Record<string, string>>('warlock:sons-escolha')?.[s] : undefined;
+  if (k?.startsWith('r')) void sound.preview(`opcoes-rpg/${s}-${k.slice(1)}`, volume);
+  else sound.play(SPELL_SOUND[s], volume);
+}
+// impacto (acertar alguém, o Escudo devolver, o Agarrar prender): toca a opção escolhida em vez do golpe padrão; sem escolha, false
+function impactSound(sound: ReturnType<typeof createSound>, src: string, volume: number) {
+  const k = TESTE_SONS ? store.json<Record<string, string>>('warlock:sons-impacto')?.[src] : undefined;
+  if (!k?.startsWith('r')) return false;
+  void sound.preview(`opcoes-rpg-impacto/${src}-${k.slice(1)}`, volume);
+  return true;
+}
 
 // mensagens de erro do servidor (em português, protocolo inalterado) -> inglês
 const SERVER_EN: Record<string, string> = {
@@ -146,10 +160,13 @@ function hoverSound(sound: ReturnType<typeof createSound>) {
 }
 
 async function main() {
-  const name = store.get(NAME) || (await askName(ui, as));
+  // teste local dos efeitos sonoros (issue #203, em localhost e no ambiente do PR): com ?abrir=sandbox não pede apelido
+  const quick = TESTE_SONS && new URLSearchParams(location.search).get('abrir') === 'sandbox';
+  const name = store.get(NAME) || (quick ? 'Teste' : await askName(ui, as));
   store.set(NAME, name);
   const id = location.hash.slice(1).toUpperCase();
-  if (/^[A-Z]{4}$/.test(id)) startRoom(id, name);
+  // F5 com ?abrir=sandbox: sala de sandbox nova (sem o aviso guardado, a sala antiga já saiu do sandbox)
+  if (/^[A-Z]{4}$/.test(id) && !(quick && !sessionStorage.getItem(AUTOSTART))) startRoom(id, name);
   else startLobby(name);
   // Esc sem nada para cancelar ou fechar abre as configurações (pedido do Fernando, 18/10); por último, depois dos ouvintes da sala
   onFreeEsc(() => !document.querySelector('.overlay') && openSettings());
@@ -209,6 +226,8 @@ function startLobby(name: string) {
     void create(k, k === 'partida:ascensao');
   } else if (IR_CONFIG) openSettings(IR_CONFIG);
   else if (k) document.getElementById('home-tab-' + k)?.click();
+  // teste local dos efeitos sonoros (issue #203, em localhost e no ambiente do PR): ?abrir=sandbox entra direto no sandbox
+  if (TESTE_SONS && new URLSearchParams(location.search).get('abrir') === 'sandbox') void create('sandbox');
 }
 
 function startRoom(code: string, name: string) {
@@ -314,6 +333,8 @@ function startRoom(code: string, name: string) {
     spectate: (on) => net.send({ t: 'watch', on }),
     seeInvis: (on) => (seeInvis = on),
     seeHit: (on) => (seeHit = on),
+    spellSound: (s) => sound.play(SPELL_SOUND[s]),
+    preview: (name) => void sound.preview(name),
     spell: (s) => input.button(s),
     hover: (a) => (hovered = a),
     volumes: sound.volumes,
@@ -401,7 +422,7 @@ function startRoom(code: string, name: string) {
       predict.hold(CAST_POINT[spell]);
       scene.castLocal(me, spell, at);
       scene.clickMarker(at, true);
-      sound.play(SPELL_SOUND[spell]);
+      castSound(sound, spell);
       return true;
     },
     center: () => {
@@ -557,11 +578,13 @@ function startRoom(code: string, name: string) {
       else if (e.k === 'death' && e.id === me) rumble(1, 500);
       if (e.k === 'cast' && e.id !== me) {
         const w = interp.latest()?.wizards.find((z) => z.id === e.id);
-        sound.play(SPELL_SOUND[e.spell], w ? near(w.pos.x, w.pos.y) : 0.5);
-      } else if (e.k === 'hit') sound.play(e.dmg >= 100 ? 'hitHeavy' : e.dmg < 50 ? 'hitLight' : 'hit', near(e.x, e.y));
+        castSound(sound, e.spell, w ? near(w.pos.x, w.pos.y) : 0.5);
+      } else if (e.k === 'hit') {
+        if (!impactSound(sound, e.src, near(e.x, e.y))) sound.play(e.dmg >= 100 ? 'hitHeavy' : e.dmg < 50 ? 'hitLight' : 'hit', near(e.x, e.y));
+      }
       else if (e.k === 'pillar') sound.play('hit', near(e.x, e.y) * 0.6);
-      else if (e.k === 'grip') sound.play('hit', near(e.x, e.y));
-      else if (e.k === 'reflect') sound.play('reflect', near(e.x, e.y));
+      else if (e.k === 'grip') impactSound(sound, 'grip', near(e.x, e.y)) || sound.play('hit', near(e.x, e.y));
+      else if (e.k === 'reflect') impactSound(sound, 'shield', near(e.x, e.y)) || sound.play('reflect', near(e.x, e.y));
       else if (e.k === 'teleport' && e.id === me) predict.teleported(e.to);
       else if (e.k === 'scourge') sound.play('death', near(e.x, e.y));
       else if (e.k === 'shrink') sound.play('shrink');

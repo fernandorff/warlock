@@ -17,6 +17,7 @@ import { previewTaunt, stopTauntPreview } from './sound.ts';
 import { LANG, setLang, spellName, t, type Lang } from './i18n.ts';
 import { isSpell } from '../shared/spells.ts';
 import { store } from './store.ts';
+import { MUSIC_TRACKS, musicTrack, setMusicTrack, type MusicTrack } from './sound.ts';
 
 declare const __BUILD__: string;
 
@@ -145,7 +146,10 @@ function soundSection(): Node[] {
     setVolume('music', next.music);
     draw();
   } }, muteText());
-  return [slider('sfx', t('Efeitos', 'Effects')), slider('music', t('Música', 'Music')), muteBtn];
+  return [slider('sfx', t('Efeitos', 'Effects')), slider('music', t('Música', 'Music')),
+    el('div', { class: 'vol-row' }, el('span', {}, t('Música da partida', 'Match music')),
+      choice(t('Música da partida', 'Match music'), (Object.keys(MUSIC_TRACKS) as MusicTrack[]).map((k) => [k, MUSIC_TRACKS[k]] as [MusicTrack, string]), musicTrack(), (k) => (setMusicTrack(k), draw()))),
+    muteBtn];
 }
 
 function videoSection(): Node[] | null {

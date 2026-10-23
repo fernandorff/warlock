@@ -18,6 +18,7 @@ import { ITEM_GROUPS, SPELL_GROUPS, SPELL_USE, groupClass, n1, pct, spellClass }
 import { BAD_STATUS, ICON, ITEM_ICON, RUNE_ICON, RUNE_NAME, SOURCE_ICON, STATUS_ICONS, UI_ICON, actionName, el, fxClock, icon, iconButton, type Child } from './icons.ts';
 import { BASE, diff, sheet, type Change, type SheetRow } from './sheet.ts';
 import { store } from './store.ts';
+import { MUSIC_TRACKS, musicTrack, setMusicTrack, type MusicTrack } from './sound.ts';
 import { botSetupPanel, savedBotSetup } from './train.ts';
 import { CHALLENGES, bestOf, goalText } from './challenges.ts';
 import { PROFILE_KEY, toSkill, type Profile } from './mimic.ts';
@@ -268,6 +269,9 @@ let toastTimer: ReturnType<typeof setTimeout> | undefined;
 type ToastKind = 'info' | 'good' | 'bad' | 'gold';
 // msg pode vir com ícones (lista de textos e nós); o de ouro ganha a moeda na frente;
 // top: no alto da tela e com letra maior, para o que todo mundo precisa ler na hora (quem saiu e o bot que assumiu, issue #223)
+// teste dos efeitos sonoros (issue #203): painel de escolha e atalho ?abrir=sandbox em localhost e no ambiente de cada PR (pr-<n>-warlock.…)
+export const TESTE_SONS = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || /^pr-\d+-warlock\./.test(location.hostname);
+
 export function toast(msg: string | (string | Node)[], kind: ToastKind = 'info', top = false) {
   let t = document.getElementById('toast');
   if (!t) document.body.append((t = el('div', { id: 'toast', role: 'status' })));
@@ -337,6 +341,8 @@ type RoomActions = {
   spectate: (on: boolean) => void; // assistir (sem mago a partir da próxima rodada) ou voltar a jogar
   seeInvis: (on: boolean) => void; // sandbox: invisíveis meio transparentes (só nesta tela)
   seeHit: (on: boolean) => void; // sandbox: discos da colisão real no chão (só nesta tela)
+  spellSound: (s: SpellId) => void; // teste local dos efeitos sonoros (issue #203, em localhost e no ambiente do PR)
+  preview: (name: string) => void;
 };
 
 type Level = MatchOpts['difficulty'];
@@ -895,6 +901,43 @@ export function createRoomUi(root: HTMLElement, code: string, act: RoomActions) 
     el('div', { class: 'sandbox-row', role: 'group', 'aria-label': t('Pôr runa', 'Place rune') }, t('Runa', 'Rune'),
       ...RUNE_KINDS.map((k) => iconButton(icon(RUNE_ICON[k]), t(`Pôr a ${RUNE_NAME[k]} ao seu lado`, `Place the ${RUNE_NAME[k]} next to you`), () => act.sandbox({ op: 'rune', kind: k }), { title: RUNE_NAME[k] }))),
     el('button', { type: 'button', onclick: () => act.sandbox({ op: 'restart' }) }, t('Reiniciar a rodada', 'Restart the round')));
+  // teste dos efeitos sonoros (issue #203, em localhost e no ambiente do PR): notas, escolha de lançar e impacto por magia e a escolha da música
+  if (TESTE_SONS) {
+    // escolha, por magia, do efeito sonoro de lançar e do de impacto: o atual ou uma das 10 opções da biblioteca de RPG
+    // (public/sfx/opcoes-rpg e opcoes-rpg-impacto, R1 a R10; nomes em lista.json); a escolha fica no navegador e a partida também
+    // a usa (castSound e impactSound em main.ts)
+    const KEY = { 'opcoes-rpg': 'warlock:sons-escolha', 'opcoes-rpg-impacto': 'warlock:sons-impacto' } as const;
+    type Pasta = keyof typeof KEY;
+    const escolha: Record<Pasta, Record<string, string>> = { 'opcoes-rpg': store.json(KEY['opcoes-rpg']) ?? {}, 'opcoes-rpg-impacto': store.json(KEY['opcoes-rpg-impacto']) ?? {} };
+    const nomes: Record<Pasta, Record<string, string[]>> = { 'opcoes-rpg': {}, 'opcoes-rpg-impacto': {} };
+    const escolhaBox = el('div', {});
+    const linha = (s: SpellId, d: Pasta, rotulo: string) => nomes[d][s] && el('div', { class: 'sandbox-row' }, el('small', {}, rotulo),
+      choice(`${spellName(s)}: ${rotulo}`, [['atual', 'Atual'] as [string, string], ...nomes[d][s].map((_, i): [string, string] => ['r' + (i + 1), 'R' + (i + 1)])], escolha[d][s] ?? '', (k) => {
+        const n = +k.slice(1);
+        toast(`${spellName(s)} (${rotulo.toLowerCase()}): ${k === 'atual' ? 'atual' : `R${n} (${nomes[d][s][n - 1]})`}`);
+        if (k !== 'atual') act.preview(`${d}/${s}-${n}`);
+        else if (d === 'opcoes-rpg') act.spellSound(s);
+        escolha[d][s] = k;
+        store.set(KEY[d], JSON.stringify(escolha[d]));
+        drawEscolha();
+      }));
+    const drawEscolha = () => escolhaBox.replaceChildren(
+      el('small', { class: 'muted' }, `Lançar: ${Object.keys(escolha['opcoes-rpg']).length}/${SPELL_IDS.length} escolhidas · Impacto: ${Object.keys(escolha['opcoes-rpg-impacto']).length}/${Object.keys(nomes['opcoes-rpg-impacto']).length}`),
+      ...SPELL_IDS.map((s) => el('div', { class: 'sons-magia' }, el('b', {}, spellName(s)), linha(s, 'opcoes-rpg', 'Lançar'), linha(s, 'opcoes-rpg-impacto', 'Impacto'))));
+    drawEscolha();
+    for (const d of ['opcoes-rpg', 'opcoes-rpg-impacto'] as const)
+      void fetch(`/sfx/${d}/lista.json`).then((r) => (r.ok ? r.json() : {})).then((j) => ((nomes[d] = j), drawEscolha()), () => {});
+    const musicBox = el('div', {});
+    const drawMusic = () => musicBox.replaceChildren(choice('Música da partida', (Object.keys(MUSIC_TRACKS) as MusicTrack[]).map((k): [MusicTrack, string] => [k, MUSIC_TRACKS[k]]), musicTrack(),
+      (k) => (setMusicTrack(k), toast(`Tocando: ${MUSIC_TRACKS[k]}`), drawMusic())));
+    drawMusic();
+    sbPanel.prepend(
+      el('b', {}, '🧪 Teste dos efeitos sonoros (issue #203)'),
+      el('small', { class: 'muted' }, 'Cada botão toca o efeito sonoro e fica marcado como o escolhido. "Atual" é o de hoje; R1 a R10 vêm do pacote freeware de RPG (assets/sons-rpg). Lançar = ao soltar a magia; Impacto = ao acertar alguém (no Escudo, ao devolver; no Agarrar, ao prender). Todos a −18 LUFS. A escolha fica neste navegador e vale na partida: lance as magias para ouvir.'),
+      escolhaBox,
+      el('small', { class: 'muted' }, 'Música (a mesma opção de Configurações → Som; troca na hora). A nova dá a volta em 2 min 3 s: ouça se o recomeço tem vão ou estalo.'),
+      musicBox);
+  }
   let sbSig = '';
   let sbOpened = false;
   function drawSandbox(r: PublicRoom) {
@@ -907,6 +950,12 @@ export function createRoomUi(root: HTMLElement, code: string, act: RoomActions) 
     if (!sbOpened) {
       sbOpened = true;
       toggle(sbPanel, sbBtn, true);
+      // teste local dos efeitos sonoros (issue #203, em localhost e no ambiente do PR): o navegador só libera som depois de um clique
+      if (TESTE_SONS) {
+        const go = el('button', { type: 'button', class: 'primary big', style: 'position:fixed;inset:35% 30%;z-index:9999;font-size:1.4rem',
+          onclick: () => go.remove() }, '▶ Clique para ligar o som (o navegador pede 1 clique) e escolha os sons no painel à direita');
+        document.body.append(go);
+      }
     }
     if (document.activeElement !== sbEffect) sbEffect.value = r.effect ?? '';
     for (const [k, box] of sbChecks) box.checked = r.sandbox[k];

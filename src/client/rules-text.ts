@@ -132,7 +132,7 @@ const RULES_PT = {
     'Na loja, passe o mouse (ou toque) numa magia para ver os números do nível atual e do próximo.',
   ],
   creditos: [
-    'Personagens e decoração: KayKit, de Kay Lousberg (kaylousberg.com). Texturas: ambientCG e Poly Haven. Partículas e sons: Kenney e OpenGameArt. Música: "Determined Pursuit", de Emma_MA. Tudo em domínio público (CC0). Ícones: game-icons.net, de Lorc, Delapouite, Skoll, Sbed e Caro Asercion (CC BY 3.0; lista em CREDITS.txt).',
+    'Personagens e decoração: KayKit, de Kay Lousberg (kaylousberg.com). Texturas: ambientCG e Poly Haven. Partículas e sons: Kenney, OpenGameArt e lentikula. Música: "Epic Boss Battle", de Juhani Junkala. Tudo em domínio público (CC0). Ícones: game-icons.net, de Lorc, Delapouite, Skoll, Sbed e Caro Asercion (CC BY 3.0; lista em CREDITS.txt).',
     'Inspirado no Warlock do Warcraft 3 e no Warlock Brawl para Dota 2.',
   ],
 };
@@ -249,7 +249,7 @@ const RULES_EN: typeof RULES_PT = {
     'In the shop, hover (or tap) a spell to see the numbers for the current and the next level.',
   ],
   creditos: [
-    'Characters and decoration: KayKit, by Kay Lousberg (kaylousberg.com). Textures: ambientCG and Poly Haven. Particles and sounds: Kenney and OpenGameArt. Music: "Determined Pursuit", by Emma_MA. All public domain (CC0). Icons: game-icons.net, by Lorc, Delapouite, Skoll, Sbed and Caro Asercion (CC BY 3.0; list in CREDITS.txt).',
+    'Characters and decoration: KayKit, by Kay Lousberg (kaylousberg.com). Textures: ambientCG and Poly Haven. Particles and sounds: Kenney, OpenGameArt and lentikula. Music: "Epic Boss Battle", by Juhani Junkala. All public domain (CC0). Icons: game-icons.net, by Lorc, Delapouite, Skoll, Sbed and Caro Asercion (CC BY 3.0; list in CREDITS.txt).',
     'Inspired by Warlock from Warcraft 3 and Warlock Brawl for Dota 2.',
   ],
 };

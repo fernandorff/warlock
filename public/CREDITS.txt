@@ -55,7 +55,8 @@ fx/flame_01.png fx/fire_01.png fx/smoke_01.png fx/spark_01.png fx/magic_02.png f
 sfx/fireball.mp3
   Julien Matthey, "JM_FX_Fireball_01" (Freesound 105016), via OpenGameArt "Fireball" - https://opengameart.org/content/fireball-1
   Licença lida na página: CC0.
-sfx/explode.mp3 (explosionCrunch_000), sfx/shield.mp3 (forceField_000)
+sfx/explode.mp3 (explosionCrunch_000), sfx/shield.mp3 (forceField_000), sfx/rush.mp3 (thrusterFire_001), sfx/boomerang.mp3 (engineCircular_002), sfx/gravity.mp3 (spaceEngineLow_000),
+sfx/link.mp3 (laserLarge_001), sfx/windwalk.mp3 (doorOpen_000), sfx/warpzone.mp3 (spaceEngine_000)
   Kenney, "Sci-fi Sounds" - https://kenney.nl/assets/sci-fi-sounds
   Licença lida no License.txt do zip: "License: (Creative Commons Zero, CC0)".
 sfx/hit.mp3 (impactPunch_heavy_000)
@@ -64,18 +65,47 @@ sfx/hit.mp3 (impactPunch_heavy_000)
 sfx/click.mp3 (click_001), sfx/confirm.mp3 (confirmation_001)
   Kenney, "Interface Sounds" - https://kenney.nl/assets/interface-sounds
   Licença lida no License.txt do zip: "License: (Creative Commons Zero, CC0)".
-sfx/teleport.mp3 (teleport.ogg), sfx/lightning.mp3 (electricspell2.ogg)
+sfx/teleport.mp3 (teleport.ogg)
   Augmentality (Brandon Morris), "Spell sounds" (enviado por HaelDB) - https://opengameart.org/content/spell-sounds
   Licença lida na página: duas opções, "OGA-BY 3.0" e "CC0"; usada sob CC0.
-sfx/homing.mp3 (magical_7.ogg)
+sfx/lightning.mp3 (Lightning Spell Impact 1), sfx/frost.mp3 (Ice Spell Impact 5), sfx/meteor.mp3 (Fire Spell Impact 4), sfx/cluster.mp3 (Fire Spell Impact 5),
+sfx/splitter.mp3 (Fire Spell Impact 1), sfx/bouncer.mp3 (Lightning Spell Impact 3), sfx/drain.mp3 (Water Spell Impact 1)
+  lentikula, "Basic Spell Impacts [Free/CC0]" - https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx
+  Licença lida na página (o zip não traz arquivo de licença): "I release this pack under a CC0 license, so you can use it in whatever project without attribution".
+sfx/homing.mp3 (magical_7.ogg), sfx/swap.mp3 (magical_2), sfx/illusion.mp3 (magical_3), sfx/recharge.mp3 (magical_4), sfx/alteration.mp3 (magical_5), sfx/magnetize.mp3 (magical_1_0)
   JaggedStone, "Magic Spell SFX" - https://opengameart.org/content/magic-spell-sfx
   Licença lida na página: CC0 ("Copyright/Attribution Notice: None needed").
+sfx/grip.mp3 (bfh1_metal_hit_02.ogg), sfx/thrust.mp3 (bfh1_metal_hit_04.ogg)
+  rubberduck, "75 CC0 breaking / falling / hit sfx" - https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+  Licença lida na página em 20/10/2026 (campo "License(s)"): "CC0".
+sfx/rockpillar.mp3 (boulder_drop_0.ogg)
+  themightyglider, "Moving Boulder" - https://opengameart.org/content/moving-boulder (derivado de Freesound 513236 e 522099, ambos CC0)
+  Licença lida na página em 20/10/2026 (campo "License(s)"): "CC0".
+sfx/opcoes/*.mp3 (as 75 opções de efeito sonoro das magias, issue #203; arquivo de cada opção em scripts/assets/opcoes.tsv)
+  Licença lida na página de cada pacote em 20/10/2026 (campo "License(s)" do OpenGameArt ou texto da página): "CC0".
+  rubberduck, "80 CC0 RPG SFX" - https://opengameart.org/content/80-cc0-rpg-sfx
+  rubberduck, "100 CC0 SFX" - https://opengameart.org/content/100-cc0-sfx
+  artisticdude, "RPG Sound Pack" - https://opengameart.org/content/rpg-sound-pack
+  artisticdude, "Swishes Sound Pack" - https://opengameart.org/content/swishes-sound-pack
+  legit-audio, "Fire Staff Sound Effects" - https://opengameart.org/content/fire-staff-sound-effects
+  bart, "Ice Spells" - https://opengameart.org/content/ice-spells
+  ogrebane, "Teleport Spell" - https://opengameart.org/content/teleport-spell
+  qubodup, "Earth Element Magic Spell" - https://opengameart.org/content/earth-element-magic-spell
+  fvcalderan, "Gravity Inverter" - https://opengameart.org/content/gravity-inverter
+  qubodup, "3 Dark Magic Spells" - https://opengameart.org/content/3-dark-magic-spells
+  qubodup, "Energy Drain" - https://opengameart.org/content/energy-drain
+    A página diz "2024-06-23: terms changed to CC0. Restrictions in the 7z file can be ignored."; o license.txt do 7z ainda cita CC-BY-SA 3.0.
+  Kenney, "RPG Audio" - https://kenney.nl/assets/rpg-audio (License.txt do zip: "Creative Commons Zero, CC0")
+  Também lentikula "Basic Spell Impacts" e JaggedStone "Magic Spell SFX", creditados acima.
 sfx/lava_loop.mp3 (fire-1.ogg, com crossfade para laço)
   AntumDeluge, "Fire Crackling" - https://opengameart.org/content/fire-crackling
   Licença lida na página: "Licensing: Creative Commons Zero (CC0)".
 
 == Música ==
 music/battle.mp3
+  Juhani Junkala (SubspaceAudio), "Epic Boss Battle [Seamlessly Looping]" - https://opengameart.org/content/boss-battle-music
+  Licença lida na página: CC0 ("License(s): CC0"; "Loops seamlessly!").
+music/pursuit.mp3 (opção "Determined Pursuit" em Configurações → Som)
   Emma_MA, "Determined Pursuit (epic orchestra loop)" - https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
   Licença lida na página: CC0 ("This track is in the public domain as of January 2017. No attribution necessary.").
 
