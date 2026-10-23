@@ -8,12 +8,53 @@ import { ITEMS, MAX_ITEMS, type ItemId } from '../shared/items.ts';
 import { keyLabel, keyOf, padButtonName, padButtonOf, uiLabel, type PadAction, type UiAction } from './keys.ts';
 import { BOUNCER, CAST_POINT, GRAVITY, GRIP, MAX_SPELLS, MAX_SPELL_LEVEL, METEOR_DELAY, PACT, RECHARGE, RUSH, SHIELD, SPELLS, SPELL_GROUP_IDS, SPELL_IDS, WARPZONE, type SpellId } from '../shared/spells.ts';
 import { LANG, LOCALE, spellName, t } from './i18n.ts';
-import { BASIC_ATTACK } from '../shared/constants.ts';
+import { BASIC_ATTACK, BRACE, KNOCK_RECOVERY } from '../shared/constants.ts';
 
 export const ATTACK_TEXT = t(
   `Atacar: aperte a tecla do ataque (A por padrão) e clique com o esquerdo num inimigo; no chão, escolhe o inimigo visível mais próximo de você dentro de ${BASIC_ATTACK.range} m. Até ${BASIC_ATTACK.melee.toLocaleString(LOCALE)} m usa corpo a corpo; mais longe, projétil direcionado. Preparo de ${BASIC_ATTACK.windup.toLocaleString(LOCALE)} s: S, movimento, conjuração ou stun cancelam antes do golpe, sem gastar recarga. Cada golpe exige nova ordem; não persegue nem repete sozinho. Causa ${BASIC_ATTACK.dmg} de dano e empurrão leve; o projétil não destrói magias.`,
   `Attack: press the attack key (A by default), then left-click an enemy; on the ground, selects the visible enemy closest to you within ${BASIC_ATTACK.range} m. Within ${BASIC_ATTACK.melee} m uses melee; farther away, a targeted projectile. A ${BASIC_ATTACK.windup} s windup: S, movement, casting or stun cancel before release without spending the cooldown. Each hit requires a new order; no automatic chasing or repeating. Deals ${BASIC_ATTACK.dmg} damage and light knockback; the projectile does not destroy spells.`
 );
+
+export const BRACE_TEXT = t(
+  `Manter base: segure a tecla de Parar (S por padrão) por ${BRACE.windup.toLocaleString(LOCALE)} s. Parar é imediato; a resistência de ${Math.round(BRACE.resistance * 100)}%, a postura e o aviso sonoro só ativam após o preparo. Enquanto mantém a tecla, não caminha nem guarda destinos e recebe Incapacitar: as recargas ficam pausadas, mas magias prontas podem ser usadas. Reduz apenas novos empurrões, multiplicando outras resistências; não apaga um impulso anterior nem reduz dano. Solte a tecla e dê nova ordem para caminhar.`,
+  `Hold ground: hold the Stop key (S by default) for ${BRACE.windup} s. Stopping is immediate; ${Math.round(BRACE.resistance * 100)}% resistance, pose and sound activate only after the windup. While held, walking commands are ignored, not queued, and Incapacitate pauses cooldowns; ready spells remain usable. Only reduces new knockback, multiplying other resistances; does not erase previous momentum or reduce damage. Release the key and give a new order to walk.`
+);
+// Mesmos dados alimentam Aprender, páginas do Grimório e ajuda da loja; controles não são produtos compráveis.
+export const MECHANIC_GUIDES = [
+  { id: 'basic' as const, title: t('Atacar', 'Attack'), text: ATTACK_TEXT },
+  { id: 'brace' as const, title: t('Manter base', 'Hold ground'), text: BRACE_TEXT },
+];
+
+// Status descrevem o efeito em si, sem anexar uma magia ou demonstração.
+export const NEGATIVE_GUIDES = [
+  { id: 'status-knockback', title: t('Empurrão (knockback)', 'Knockback'), text: t(
+    `Deslocamento forçado por um impacto. O dano histórico não aumenta sua força; impactos simultâneos e resistências ainda alteram o resultado. Ao terminar o impulso, o residual é encerrado: uma ordem de caminhada guardada usa a posição atual, sem ordem não há caminhada automática. A recuperação começa em ${KNOCK_RECOVERY.start * 100}% da velocidade e ganha ${KNOCK_RECOVERY.step * 100} pontos percentuais a cada ${KNOCK_RECOVERY.interval.toLocaleString(LOCALE)} s, voltando a 100% em ${KNOCK_RECOVERY.seconds} s. Essa recuperação não é um novo stun.`,
+    `Forced displacement from an impact. Historical damage does not increase its force; simultaneous impacts and resistances still affect it. When the impulse ends, residual momentum is cleared: a stored walking order uses your current position; without an order there is no automatic walking. Recovery starts at ${KNOCK_RECOVERY.start * 100}% speed and gains ${KNOCK_RECOVERY.step * 100} percentage points every ${KNOCK_RECOVERY.interval} s, returning to 100% in ${KNOCK_RECOVERY.seconds} s. This recovery is not a new stun.`) },
+  { id: 'status-stun', title: t('Atordoamento (stun)', 'Stun'), text: t(
+    'Impede caminhar, conjurar qualquer magia e preparar Atacar enquanto estiver ativo. Forças externas ainda podem deslocar o corpo. Ao terminar, as ações voltam a ficar disponíveis, respeitando outros efeitos que ainda estejam ativos.',
+    'Prevents walking, casting any spell and winding up Attack while active. External forces can still displace the body. When it ends, actions become available again, subject to any other effects that remain active.') },
+  { id: 'status-snare', title: t('Agarramento (snare/root)', 'Root (snare)'), text: t(
+    'Impede caminhar e usar magias de mobilidade, mas permite outras magias e Atacar. Forças externas ainda podem deslocar o alvo. A duração e as condições para encerrar a prisão são definidas pela fonte que aplica o efeito.',
+    'Prevents walking and mobility spells, but allows other spells and Attack. External forces can still displace the target. Duration and conditions for ending the root are defined by the source applying the effect.') },
+  { id: 'status-slow', title: t('Lentidão (slow)', 'Slow'), text: t(
+    'Reduz a velocidade de caminhada, sem bloquear conjurações nem pausar recargas por si só. Intensidade e duração dependem da fonte que aplica o efeito. Efeitos de uma área dependem de permanecer dentro dela; não confunda sua duração com a duração de uma lentidão aplicada ao alvo.',
+    'Reduces walking speed without blocking casts or pausing cooldowns by itself. Strength and duration depend on the source applying the effect. Area effects depend on staying inside them; their lifetime is not the same as a timed slow applied to a target.') },
+  { id: 'status-incapacitate', title: t('Incapacitar', 'Incapacitate'), text: t(
+    'Pausa o progresso das recargas enquanto estiver ativo. Magias que já estão prontas podem ser lançadas; não é silêncio e não impede caminhar por si só. Ao terminar, a recarga continua de onde parou.',
+    'Pauses cooldown progress while active. Spells that are already ready can be cast; this is not silence and does not prevent walking by itself. When it ends, cooldowns resume where they stopped.') },
+  { id: 'status-burning', title: t('Queimadura', 'Burning'), text: t(
+    'Dano contínuo enquanto permanece em chão de fogo ou na lava. Não bloqueia movimento ou conjurações por si só. Sair da área interrompe essa fonte de dano; o chão de fogo e a lava têm valores próprios.',
+    'Continuous damage while standing in burning ground or lava. Does not block movement or casting by itself. Leaving the area stops that damage source; burning ground and lava have separate damage values.') },
+  { id: 'status-tether', title: t('Vínculo (tether)', 'Tethered'), text: t(
+    'Um vínculo mantém dois corpos conectados e pode puxá-los um em direção ao outro. Não proíbe caminhar ou conjurar por si só. Dano periódico, duração e condições de rompimento dependem da fonte que aplica o vínculo.',
+    'A tether connects two bodies and can pull them toward one another. It does not prevent walking or casting by itself. Periodic damage, duration and break conditions depend on the source applying the tether.') },
+  { id: 'status-magnetized', title: t('Magnetizado (atração)', 'Magnetized (attraction)'), text: t(
+    'A atração curva projéteis inimigos próximos para o alvo magnetizado. Não é um empurrão no corpo e não bloqueia caminhar ou conjurar. Repulsão é um efeito diferente, não uma parte obrigatória deste status.',
+    'Attraction bends nearby enemy projectiles toward the magnetized target. It is not a push on the body and does not block walking or casting. Repulsion is a different effect, not a required part of this status.') },
+  { id: 'status-pull', title: t('Puxões e redemoinhos', 'Pulls and vortices'), text: t(
+    'Uma força contínua arrasta corpos próximos para um ponto ou centro, conforme a regra da fonte que a aplica. O deslocamento é uma força externa, não caminhada voluntária. Não são sinônimos de stun ou Incapacitar: restrições adicionais só existem se outro status também estiver ativo.',
+    'A continuous force pulls nearby bodies toward a point or center according to the rules of its source. Displacement is an external force, not voluntary walking. These are not synonyms for stun or Incapacitate: extra restrictions apply only if another status is also active.') },
+] as const;
 
 // formatação dos números nos textos (também usada pela loja, ficha, dicas e opções)
 export const pct = (x: number) => `${Math.round(x * 100)}%`;

@@ -18,6 +18,8 @@ Vale junto com o `CLAUDE.md` da raiz.
 
 ## Idioma
 
+- Grimório: `MECHANIC_GUIDES` contém Atacar/Manter base com prévias; `NEGATIVE_GUIDES` contém nove status independentes, somente texto e sem magia/demo anexada. Ambos aparecem apenas no livro, fora de Aprender/loja. Abertura normal começa no sumário, sem persistir página; links explícitos de habilidade permanecem diretos. Recuperação50→100% fica em Empurrão.
+
 - Auditoria de guias: fichas preservam centésimos e `knockDistance` usa amortecimento/soft-cap/corte de `moveWizard`, sem amplificação por dano histórico. Roteiros demonstram bloqueios de stun/Agarrar, Escudo contra área/reflexão, colisões da Rajada e trajetórias da Ilusão. `demoStatus` lê estados reais. Canvas instrumentado não substitui inspeção visual no navegador.
 
 - Todo texto visível com `t('português', 'English')` (`i18n.ts`). Nomes por `spellName`, `itemName`, `arenaName`; textos de item por `itemText`; números com `LOCALE` (helpers `n1`/`pct`).
