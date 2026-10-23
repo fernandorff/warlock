@@ -6,6 +6,7 @@ import { CHARACTERS, LOOK_PARTS, PRESETS, fixLook, isCharacter, isLook, isRetire
 import { t } from './i18n.ts';
 import { el, iconButton } from './icons.ts';
 import { loadFile, loadLook, lookModel } from './scene.ts';
+import { classLine } from './sheet.ts';
 import { store } from './store.ts';
 
 // ?as=nome (várias abas na mesma máquina) também separa a aparência, como o apelido e o personagem em main.ts
@@ -145,6 +146,7 @@ function build(): HTMLElement {
   }, { passive: false }); // sem passive: false o preventDefault não segura a rolagem da página enquanto aproxima
 
   const names = LOOK_PARTS.map(() => el('b', { class: 'avatar-name' }));
+  const classInfo = el('small', { class: 'muted' }); // classe que o tronco escolhido dá (issue #17)
   const set = (next: string) => {
     if (next === look) return;
     saveLook(next);
@@ -169,6 +171,7 @@ function build(): HTMLElement {
     const now = look;
     look = savedLook();
     LOOK_PARTS.forEach((p, i) => (names[i].textContent = optName(p.opts[Number(look[i])], p.id)));
+    classInfo.textContent = classLine(look);
     presets.forEach((b, i) => b.setAttribute('aria-pressed', String(look === lookOf(PRESETS[i].id))));
     if (look !== now || !shown) show(look);
   };
@@ -176,6 +179,6 @@ function build(): HTMLElement {
     el('style', {}, `.avatar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}.avatar-view{width:${W}px;max-width:100%;display:flex;flex-direction:column;gap:4px}.avatar canvas{width:${W}px;height:${H}px;max-width:100%;border-radius:12px;background:radial-gradient(circle at 50% 40%,#3a2a40,#15101a);touch-action:none;cursor:grab}.avatar-parts{flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px}.avatar-pick{display:flex;align-items:center;gap:6px}.avatar-name{min-width:9em;text-align:center}.avatar-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.avatar-preset{padding:2px;min-height:0;border-radius:8px}.avatar-preset[aria-pressed=true]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}`),
     el('div', { class: 'avatar-view' }, renderer.domElement, el('small', { class: 'muted' }, t('Arraste para orbitar · role para aproximar', 'Drag to orbit · scroll to zoom'))),
     el('div', { class: 'avatar-parts' }, el('small', { class: 'muted' }, t('Prontos', 'Presets')), el('div', { class: 'avatar-presets' }, ...presets), ...rows,
-      el('button', { type: 'button', onclick: () => set(randomLook()) }, t('Aleatório', 'Random')),
+      el('button', { type: 'button', onclick: () => set(randomLook()) }, t('Aleatório', 'Random')), classInfo,
       el('small', { class: 'muted' }, t('Vale na hora, até no meio da partida, e os outros jogadores veem. Fica salvo neste navegador.', 'Applies right away, even mid-match, and the other players see it. Saved in this browser.'))));
 }

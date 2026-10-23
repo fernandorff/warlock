@@ -81,5 +81,20 @@ export const lookHead = (s: string): CharacterId => {
   return head === 'rogue' && Number(s[HAT]) === HOOD ? 'rogue_hooded' : head;
 };
 export const lookBody = (s: string): CharacterId => LOOK_PARTS[BODY].opts[Number(s[BODY])]!.from;
+// classes (issue #17, proposta do Reinaldo, 21/10; números sem simulador): o Tronco do look decide a classe, as outras peças são livres.
+// Os outros bonecos ainda não têm classe. kb: empurrão a menos (fração); regen, speed, dmg: × vida por segundo, velocidade e dano;
+// cd: × recarga das magias; afflict: × duração das lentidões e penalidades que o mago aplica nos outros
+export const CLASS_IDS = ['knight', 'rogue', 'mage'] as const;
+export type ClassId = (typeof CLASS_IDS)[number];
+export type ClassPassive = { kb?: number; regen?: number; speed?: number; dmg?: number; cd?: number; afflict?: number };
+export const CLASS_PASSIVE: Record<ClassId, ClassPassive> = {
+  knight: { kb: 0.05, regen: 1.05 },
+  rogue: { speed: 1.05, afflict: 1.05 },
+  mage: { dmg: 1.05, cd: 0.95 },
+};
+export const classOf = (look: string | undefined): ClassId | null => {
+  const body = look ? lookBody(look) : null;
+  return CLASS_IDS.find((c) => c === body) ?? null;
+};
 export const lookPieces = (s: string) => [...s].map((n, i) => LOOK_PARTS[i].opts[Number(n)]).filter((p): p is NonNullable<Piece> => !!p);
 export const randomLook = (rand = Math.random) => encodeLook(retire(LOOK_PARTS.map(({ opts }) => Math.floor(rand() * opts.length))));

@@ -2,7 +2,7 @@
 import { ARENA_IDS, type ArenaId } from './arena.ts';
 import { ASC_ROUNDS, ascDeath, ascEndRound, ascMark, ascOwner, ascResume, ascShop, ascWinner, newAsc, type AscLobby, type AscState } from './ascension.ts';
 import { BOT_SKILL, botBuy, botCmds, botThinks, botWatch, skillAt, threatTo, type BotPlan, type BotSkill } from './bots.ts';
-import { CHARACTERS, fixLook, lookHead, lookOf, type CharacterId } from './characters.ts';
+import { CHARACTERS, classOf, fixLook, lookHead, lookOf, type CharacterId } from './characters.ts';
 import {
   ARENA_MIN, ARENA_STEP, ASSIST_GOLD, ASSIST_MIN_DMG, BOUNTY, STREAK, COUNTDOWN_MS, LEADER_WIN_GOLD, RECOVERY, DM_ROUND_MS, KILL_GOLD, MAX_PLAYERS, MAX_WATCHERS, PILLAR, PROJ_R, ROUND_EFFECT_IDS, ROUND_END_MS, ROUND_GOLD, SELL_DECAY, SELL_FLOOR, TOP_DMG_GOLD, VOTE_MS, WIN_GOLD, WIZ_R, arenaRadius,
   roundMods, type RoundEffectId, type RuneKind,
@@ -234,14 +234,14 @@ export function setWatch(m: Match, id: string, on: boolean): boolean {
 function enter(m: Match, p: Player) {
   const w = m.sandbox && m.world;
   if (!w || p.watch || w.wizards.some((z) => z.id === p.id)) return;
-  const z = newWorld([p.id], { [p.id]: p.spells }, { [p.id]: p.items }).wizards[0];
+  const z = newWorld([p.id], { [p.id]: p.spells }, { [p.id]: p.items }, 0, undefined, false, {}, undefined, undefined, { [p.id]: classOf(p.look) }).wizards[0];
   w.wizards.push(Object.assign(z, { alive: false, respawnAt: 0 }));
 }
 
 // sandbox: compra e venda valem na hora, no mago da rodada
 function refit(m: Match, p: Player) {
   const z = m.sandbox && m.world?.wizards.find((q) => q.id === p.id);
-  if (z) Object.assign(z, gearOf(p.items), { spells: { ...p.spells } });
+  if (z) Object.assign(z, gearOf(p.items, classOf(p.look)), { spells: { ...p.spells } });
 }
 
 // bot novo com o primeiro id livre (bot-1…bot-8); undefined com a sala cheia
@@ -672,7 +672,7 @@ function enterCountdown(m: Match, now: number, rand: () => number) {
   const teams = m.mode === 'teams' ? Object.fromEntries(playing(m).map((p) => [p.id, p.team ?? 0])) : {};
   // arena fixa pela sala ou sorteada a cada rodada (o sorteio só gasta número aleatório quando é 'random')
   const arena = m.opts.arena === 'random' ? ARENA_IDS[Math.floor(rand() * ARENA_IDS.length)] : m.opts.arena;
-  m.world = newWorld(ids, Object.fromEntries(playing(m).map((p) => [p.id, p.spells])), Object.fromEntries(playing(m).map((p) => [p.id, p.items])), PILLAR.min + Math.floor(rand() * (PILLAR.max - PILLAR.min + 1)), rand, m.mode === 'deathmatch' || !!m.sandbox, teams, { runes: m.opts.runes, sudden: m.opts.sudden, chests: m.opts.chests && !m.asc }, arena);
+  m.world = newWorld(ids, Object.fromEntries(playing(m).map((p) => [p.id, p.spells])), Object.fromEntries(playing(m).map((p) => [p.id, p.items])), PILLAR.min + Math.floor(rand() * (PILLAR.max - PILLAR.min + 1)), rand, m.mode === 'deathmatch' || !!m.sandbox, teams, { runes: m.opts.runes, sudden: m.opts.sudden, chests: m.opts.chests && !m.asc }, arena, Object.fromEntries(playing(m).map((p) => [p.id, classOf(p.look)])));
   if (m.asc) ascMark(m);
   if (m.sandbox) m.world.shrink = m.sandbox.shrink; // a sandbox usa o mundo do deathmatch: não encolhe (a não ser que peçam) e quem morre volta
   // efeito da rodada: o que a loja mostrou (a opção pode ter mudado por votação); o da próxima é sorteado depois do mundo,

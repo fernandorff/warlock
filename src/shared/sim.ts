@@ -4,6 +4,7 @@ import {
   ISLAND, NO_MODS, PROJ_SPAWN, RUNE, RUNE_KINDS, SUDDEN, SWORDS, WALL_GAP, WIZ_R, WIZ_SPEED, arenaRadius, type RoundEffectId, type RoundMods, type RuneKind,
 } from './constants.ts';
 import { SHAPES, edge, inArena, inLavaAt, inward, isleSpot, onIsle, safeInside, type ArenaId, type Isle } from './arena.ts';
+import { CLASS_PASSIVE, type ClassId, type ClassPassive } from './characters.ts';
 import { AEGIS, SHOCK_BOOTS, WIND_BOOTS, itemStats, noItems, type ItemId } from './items.ts';
 import { BOOMERANG, BOUNCER, CAST_POINT, CLUSTER_FAN, DRAIN, GRAVITY, GRIP, HOMING_TURN, LIGHTNING, LINK, MAGNETIZE, METEOR_DELAY, PACT, RECHARGE, RUSH, SNOWBALL, SPELL_IDS, SPLITTER, THRUST, WARPZONE, WINDWALK, spellLevel, type Level, type SpellId } from './spells.ts';
 import { add, clampLen, dist, dot, len, norm, scale, sub, v, type Vec } from './vec.ts';
@@ -62,6 +63,9 @@ export type Wizard = {
   invulnUntil: number;
   respawnAt: number; // deathmatch: instante (w.t) em que o morto volta
   rangeF: number; // alcance das magias (Elmo: −10%)
+  dmgF: number; // dano que causa (classe Mago: ×1,05)
+  cdF: number; // recarga das magias (classe Mago: ×0,95)
+  afflict: number; // duração das lentidões e penalidades que aplica nos outros (classe Ladino: ×1,05)
   lifesteal: number; // fração do dano causado que volta como vida
   lavaCut: number; // Botas de lava: fração do dano da lava a menos
   ward: number; // Guardião: dano a menos por golpe (até metade do golpe)
@@ -187,15 +191,19 @@ type Rules = { runes: boolean; sudden: boolean; chests: boolean };
 const ALL_RULES: Rules = { runes: true, sudden: true, chests: true };
 
 // o que os itens dão ao mago: no começo da rodada e, na sandbox, ao comprar no meio dela
-export function gearOf(items: Partial<Record<ItemId, number>> = {}) {
+export function gearOf(items: Partial<Record<ItemId, number>> = {}, cls: ClassId | null = null) {
   const own = { ...noItems(), ...items };
   const st = itemStats(own);
+  const c: ClassPassive = cls ? CLASS_PASSIVE[cls] : {}; // passiva da classe (characters.ts), por cima dos itens
   return {
     items: own,
     hpMax: HP_MAX + st.hp,
-    regen: HP_REGEN + st.regen,
-    kbResist: st.kb,
-    baseSpeed: WIZ_SPEED + st.speed,
+    regen: (HP_REGEN + st.regen) * (c.regen ?? 1),
+    kbResist: st.kb + (c.kb ?? 0),
+    baseSpeed: (WIZ_SPEED + st.speed) * (c.speed ?? 1),
+    dmgF: c.dmg ?? 1,
+    cdF: c.cd ?? 1,
+    afflict: c.afflict ?? 1,
     debuffMult: Math.max(0, 1 + st.debuff),
     windBonus: own.wind_boots ? Math.max(0, WIND_BOOTS.speed - st.speed) : 0, // como as de choque: vale a maior das botas
     rangeF: 1 + st.range, // Elmo: −10%
@@ -218,11 +226,12 @@ export function newWorld(
   teams: Record<string, number> = {}, // modo Times: id → time
   rules: Rules = ALL_RULES,
   arena: ArenaId = 'circle',
+  classes: Record<string, ClassId | null> = {}, // classe de cada mago (classOf do look)
 ): World {
   const arenaR = arenaRadius(ids.length);
   const wizards = ids.map((id, i): Wizard => {
     const pos = SHAPES[arena].spawn(i, ids.length, arenaR);
-    const gear = gearOf(items[id]);
+    const gear = gearOf(items[id], classes[id]);
     return {
       id,
       pos,
@@ -357,6 +366,8 @@ export function moveWizard(wz: Wizard, dt: number) {
 }
 
 const byId = (w: World, id: string | null) => w.wizards.find((z) => z.id === id && z.alive); // só os vivos
+// classe Ladino de quem lançou (vivo ou não: o projétil continua dele depois que ele cai)
+const afflictBy = (w: World, id: string) => w.wizards.find((z) => z.id === id)?.afflict ?? 1;
 const anyById = (w: World, id: string | null) => w.wizards.find((z) => z.id === id); // vivo ou morto
 const shielded = (w: World, wz: Wizard) => w.t < wz.shieldUntil;
 const bubble = (w: World, wz: Wizard) => (shielded(w, wz) ? Math.max(0, wz.shieldR - WIZ_R) : 0); // quanto a bolha do escudo passa do mago
@@ -389,6 +400,7 @@ function hit(w: World, target: Wizard, by: string, dmg: number, knock: number, d
   // runa da Fúria de quem bateu
   const att = by !== target.id ? byId(w, by) : undefined;
   if (att && att.rune === 'fury' && w.t < att.runeUntil) dmg *= 1 + RUNE.fury;
+  if (att) dmg *= att.dmgF; // classe Mago
   // Guardião: tira um pouco de cada golpe, nunca mais que metade dele (senão zerava os tiques da Gravidade e do Elo)
   dmg = Math.max(dmg * 0.5, dmg - target.ward);
   // runa do Escudo: menos dano levado (o empurrão do golpe continua)
@@ -600,7 +612,7 @@ function cast(w: World, wz: Wizard, spell: SpellId, at: Vec) {
   const level = wz.spells[spell];
   if (!level || w.t < wz.cd[spell]) return;
   const L = spellLevel(spell, level);
-  wz.cd[spell] = w.t + L.cd;
+  wz.cd[spell] = w.t + L.cd * wz.cdF; // classe Mago: recarga mais curta
   for (let i = 0; i < (SHOTS[spell] ?? 1); i++) w.events.push({ k: 'fire', id: wz.id, src: spell });
   wz.windUntil = 0; // qualquer magia acaba com a Caminhada no vento (windwalkmodifier.lua)
   // Elo: teleportar ou trocar para fora da arena solta o mago ligado (linkmodifier.lua)
@@ -821,7 +833,7 @@ function gripLand(w: World, p: Projectile) {
   let landed = false;
   for (const z of w.wizards) {
     if (!z.alive || z.id === p.owner || allies(anyById(w, p.owner), z) || w.t < z.invulnUntil || shielded(w, z) || dist(z.pos, p.pos) > L.radius + WIZ_R) continue;
-    z.gripUntil = w.t + L.duration * z.debuffMult;
+    z.gripUntil = w.t + L.duration * z.debuffMult * afflictBy(w, p.owner);
     z.gripBonus = L.scale;
     mark(w, z, p.owner, 'grip'); // crédito do abate sem dano (#179)
     z.target = null;
@@ -1070,7 +1082,7 @@ function drainHit(w: World, p: Projectile, wz: Wizard, L: Level) {
     return;
   }
   hit(w, wz, p.owner, amount, L.knock * p.dmgMult, p.vel, 'drain');
-  slowDown(w, wz, DRAIN.slow, L.duration * wz.debuffMult);
+  slowDown(w, wz, DRAIN.slow, L.duration * wz.debuffMult * afflictBy(w, p.owner));
   land(w, p, 'drain');
   w.projectiles.push({ id: w.nextId++, born: w.t, kind: 'drain', owner: p.owner, pos: p.pos, vel: v(0, 0), level: p.level, until: w.t + DRAIN.life, target: p.owner, dmgMult: p.dmgMult, caster: p.caster, back: true });
 }
@@ -1088,7 +1100,7 @@ function snowRoll(w: World, p: Projectile, at: Vec) {
     if (c > 0) o.vel = add(o.vel, scale(dir, c));
     if (o.snow) continue;
     o.snow = { until: w.t + SNOWBALL.period, by: p.owner, dmg: L.dot * SNOWBALL.period * p.dmgMult };
-    slowDown(w, o, SNOWBALL.slow, SNOWBALL.period);
+    slowDown(w, o, SNOWBALL.slow, SNOWBALL.period * afflictBy(w, p.owner));
     land(w, p, 'snowball', true);
   }
 }
@@ -1371,7 +1383,7 @@ function stepProjectiles(w: World) {
         // inimigo: atrai os projéteis dos inimigos dele; aliado ou quem lançou (depois de quicar): repele
         const enemy = wz.id !== p.owner && !allies(anyById(w, p.owner), wz);
         wz.magnet = enemy ? 1 : -1;
-        wz.magnetUntil = w.t + L.duration * (enemy ? wz.debuffMult : 1);
+        wz.magnetUntil = w.t + L.duration * (enemy ? wz.debuffMult * afflictBy(w, p.owner) : 1);
         if (enemy) {
           mark(w, wz, p.owner, 'magnetize');
           land(w, p, 'magnetize');
