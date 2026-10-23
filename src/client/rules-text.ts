@@ -1,12 +1,12 @@
 import {
-  ARENA_MIN, ARENA_R0, ASSIST_GOLD, ASSIST_MIN_DMG, BOUNTY, CHEST, CREDIT_WINDOW, DM_RESPAWN, DM_ROUND_MS, DM_SPAWN_GAP, HP_MAX, HP_REGEN, INVULN_TIME, KILL_GOLD, LAVA_DPS, LAVA_KB_FACTOR,
+  ARENA_MIN, ARENA_R0, ASSIST_GOLD, ASSIST_MIN_DMG, BOUNTY, CHEST, CREDIT_WINDOW, DM_RESPAWN, DM_ROUND_MS, DM_SPAWN_GAP, HP_MAX, HP_REGEN, INVULN_TIME, KILL_GOLD, LAVA_DPS,
   LEADER_WIN_GOLD, OBSTACLES, RECOVERY, ROUND_GOLD, RUNE, SHRINK_EVERY, START_GOLD, STREAK, SUDDEN, TOP_DMG_GOLD, VOTE_MS, WIN_GOLD, ZONES,
 } from '../shared/constants.ts';
 import { DEFAULT_OPTS, DM_GOALS, OPTION_CHOICES } from '../shared/match.ts';
 import { CLASH } from '../shared/sim.ts';
 import { ITEMS, MAX_ITEMS, type ItemId } from '../shared/items.ts';
 import { keyLabel, keyOf, padButtonName, padButtonOf, uiLabel, type PadAction, type UiAction } from './keys.ts';
-import { BOUNCER, CAST_POINT, GRAVITY, GRIP, MAX_SPELLS, MAX_SPELL_LEVEL, METEOR_DELAY, PACT, RECHARGE, RUSH, SPELLS, SPELL_GROUP_IDS, SPELL_IDS, WARPZONE, type SpellId } from '../shared/spells.ts';
+import { BOUNCER, CAST_POINT, GRAVITY, GRIP, MAX_SPELLS, MAX_SPELL_LEVEL, METEOR_DELAY, PACT, RECHARGE, RUSH, SHIELD, SPELLS, SPELL_GROUP_IDS, SPELL_IDS, WARPZONE, type SpellId } from '../shared/spells.ts';
 import { LANG, LOCALE, spellName, t } from './i18n.ts';
 import { BASIC_ATTACK } from '../shared/constants.ts';
 
@@ -17,7 +17,8 @@ export const ATTACK_TEXT = t(
 
 // formatação dos números nos textos (também usada pela loja, ficha, dicas e opções)
 export const pct = (x: number) => `${Math.round(x * 100)}%`;
-export const n1 = (x: number) => x.toLocaleString(LOCALE, { maximumFractionDigits: 1 });
+// Centésimos preservam durações como1,25s e atraso1,15s; não arredondar regras para1,3/1,2.
+export const n1 = (x: number) => x.toLocaleString(LOCALE, { maximumFractionDigits: 2 });
 const join = (xs: readonly (string | number)[], last: string) => xs.map(String).join(', ').replace(/, ([^,]*)$/, ` ${last} $1`);
 const list = (xs: readonly (string | number)[]) => join(xs, t('ou', 'or'));
 const L1 = (id: SpellId) => SPELLS[id].levels[0];
@@ -37,7 +38,7 @@ const RULES_PT = {
   empurrao: [
     'Cada golpe empurra na direção dele. O número de empurrão das magias é a distância, em metros, que um mago sem resistência desliza.',
     'O dano recebido anteriormente não aumenta o empurrão. A força depende da magia e das resistências; impulsos simultâneos ainda podem se somar.',
-    'Atordoado você não pode andar nem lançar magias. Agarrar impede andar e magias de movimento; outras magias continuam disponíveis.',
+    'Atordoado você não anda nem conjura magias. Preso pelo Agarrar você não anda nem usa magias de movimento, mas pode usar as outras. O empurrão físico continua sendo resolvido pelas forças do jogo.',
     `O abate vai para quem acertou você por último nos ${CREDIT_WINDOW} s antes da morte. Cair sozinho na lava não dá abate a ninguém.`,
     `Lava conta como dano de quem empurrou: metade da vida que a lava tira de quem você acertou nos últimos ${CREDIT_WINDOW} s entra no seu dano (placar, top dano e assistência).`,
     `Abates com até ${STREAK.window} s entre eles viram Abate duplo, Abate triplo e Massacre. Abates sem morrer (contam de uma rodada para outra): ${STREAK.spree[0]} é Matança, ${STREAK.spree[1]} Fúria assassina, ${STREAK.spree[2]} Imparável e ${STREAK.spree[3]} Lendária.`,
@@ -127,7 +128,7 @@ const RULES_PT = {
     `Fogo com míssil (arcano): explosão de ${CLASH.arcane.dmg} em ${n1(CLASH.arcane.r)} m e chão lento (anda a ${pct(ZONES.slow.mult)} por ${n1(ZONES.slow.secs)} s).`,
     `Míssil com míssil (pulso): explosão de ${CLASH.pulse.dmg} em ${n1(CLASH.pulse.r)} m e um redemoinho que puxa para o centro por ${ZONES.pull.secs} s.`,
     'Eletrocutar destrói os projéteis que atingir no caminho, sem ser interrompido por eles. Não destrói áreas persistentes nem a cópia da Ilusão; obstáculos e Escudo continuam bloqueando/refletindo Eletrocutar.',
-    'O dano das explosões cai do centro para a borda. O Escudo ativo impede esse dano e reduz novos efeitos.',
+    'O dano das explosões cai do centro para a borda. O Escudo não segura explosões.',
   ],
   dicas: [
     'Fique longe da borda: um golpe pode jogar você na lava.',
@@ -156,7 +157,7 @@ const RULES_EN: typeof RULES_PT = {
   empurrao: [
     "Each hit knocks back in the direction it travels. A spell's knockback number is the distance, in meters, that a wizard without resistance slides.",
     'Previously received damage does not increase knockback. Strength depends on the spell and resistances; simultaneous impulses can still add together.',
-    'While stunned you cannot walk or cast spells. Grip prevents walking and movement spells; other spells remain available.',
+    'While stunned you cannot walk or cast spells. While gripped you cannot walk or cast movement spells, but other spells remain usable. Physical knockback is still resolved by the game forces.',
     `The kill goes to whoever hit you last in the ${CREDIT_WINDOW} s before the death. Falling into the lava on your own gives no kill to anyone.`,
     `Lava counts as damage from whoever knocked you in: half of the health the lava takes from someone you hit in the last ${CREDIT_WINDOW} s is added to your damage (scoreboard, top damage and assists).`,
     `Kills within ${STREAK.window} s of each other become a Double kill, Triple kill and Ultra kill. Kills without dying (carried over from one round to the next): ${STREAK.spree[0]} is a Killing spree, ${STREAK.spree[1]} a Rampage, ${STREAK.spree[2]} Unstoppable and ${STREAK.spree[3]} Godlike.`,
@@ -245,7 +246,7 @@ const RULES_EN: typeof RULES_PT = {
     `Fire with missile (arcane): ${CLASH.arcane.dmg} explosion in ${n1(CLASH.arcane.r)} m and slow ground (move at ${pct(ZONES.slow.mult)} for ${n1(ZONES.slow.secs)} s).`,
     `Missile with missile (pulse): ${CLASH.pulse.dmg} explosion in ${n1(CLASH.pulse.r)} m and a whirlpool that pulls toward the center for ${ZONES.pull.secs} s.`,
     'Electrocute destroys projectiles it hits along its path without being stopped by them. Does not destroy persistent areas or the Illusion copy; obstacles and Shield still block/reflect Electrocute.',
-    'Explosion damage falls off from the center to the edge. An active Shield prevents that damage and reduces new effects.',
+    'Explosion damage falls off from the center to the edge. The Shield does not stop explosions.',
   ],
   dicas: [
     'Stay away from the edge: a hit can throw you into the lava.',
@@ -274,9 +275,9 @@ const SPELL_TIPS_PT: SpellTips = {
   teleport: ['Volte da lava para a pedra ou saia da frente de um projétil. É a única magia que sai durante o preparo do seu Flagelo (e o cancela).', `Quem lê o salto atira no ponto de chegada. Recarga longa no começo (${n1(L1('teleport').cd)} s).`],
   swap: ['Fique perto da lava e troque: o inimigo vai para o seu lugar ruim. Errou? Você vai até a metade do caminho da mira, que também serve de fuga.', 'O Escudo barra a Troca: ninguém sai do lugar.'],
   grip: [`Marque o chão: cipós nascem após ${n1(GRIP.delay)} s e prendem os inimigos na área. O golpe que solta empurra mais (+${pct(L1('grip').scale)} no nível 1).`, 'Impede andar e lançar magias de movimento; permite outras magias. Não prende aliados. Escudo ativo reduz em 40% o tempo preso. Atordoamento impede movimento e todas as magias.'],
-  meteor: [`Mire onde o inimigo vai estar daqui a ${METEOR_DELAY.toLocaleString(LOCALE)} s, ou em quem está preso ou conjurando. Dano maior no centro e atordoamento de 1,25 s, sem empurrão.`, 'Dá para sair andando da marca. Escudo ativo impede o dano e reduz o tempo do atordoamento.'],
-  rush: [`O avanço de ${n1(RUSH.dash)} m sai na hora e quem você encostar leva ${RUSH.dashDmg} de dano. Durante a Investida, metade de cada golpe vira velocidade (até o limite do nível).`, 'Só o dano é absorvido: o empurrão continua valendo.'],
-  cluster: ['De perto os 4 projéteis acertam juntos: muito dano e empurrão.', `Alcance curto (${n1(L1('cluster').range)} m): de longe erra.`],
+  meteor: [`Mire onde o inimigo vai estar daqui a ${METEOR_DELAY.toLocaleString(LOCALE)} s, ou em quem está preso ou conjurando. Dano maior no centro e atordoamento de ${n1(L1('meteor').duration)} s, sem empurrão.`, 'Dá para sair andando da marca. Escudo ativo impede o dano e reduz o tempo do atordoamento.'],
+  rush: [`O avanço de ${n1(RUSH.dash)} m dura ${n1(RUSH.dashTime)} s e termina sem caminhada automática e quem você encostar leva ${RUSH.dashDmg} de dano. Durante a Investida, ${pct(RUSH.share)} de cada golpe vira velocidade (até o limite do nível).`, 'Só o dano é absorvido: o empurrão continua valendo.'],
+  cluster: ['De perto os 4 projéteis acertam juntos: muito dano e empurrão. Seus projéteis colidem com magias inimigas em voo e ambos são destruídos; não apagam áreas persistentes nem a cópia da Ilusão.', `Alcance curto (${n1(L1('cluster').range)} m): de longe erra.`],
   boomerang: ['Acerta na ida e na volta: deixe o inimigo entre você e o ponto. Quica em obstáculos.', 'No Escudo ele quica e volta sem trocar de dono.'],
   thrust: ['O dano cheio vem com velocidade: comece de longe. Você para no primeiro inimigo que tocar.', 'No Escudo você quica. Se errar, freia no fim do caminho.'],
   gravity: [`Jogue no meio de um grupo: puxa inimigos até ${n1(GRAVITY.wizR)} m e queima quem fica a ${n1(L1('gravity').radius)} m. Também puxa projéteis de qualquer dono.`, `É lento (${n1(L1('gravity').speed)} m/s): dá para sair andando.`],
@@ -284,7 +285,7 @@ const SPELL_TIPS_PT: SpellTips = {
   bouncer: [`Melhor com inimigos juntos: pula para o mago mais perto, perdendo ${pct(1 - BOUNCER.decay)} do dano por inimigo.`, 'Contra um inimigo sozinho é só um acerto.'],
   drain: ['Mire perto do grupo: depois do ponto, vira para o mago mais perto. No inimigo, dano, lentidão e a vida volta para você; no aliado, cura e pressa.', `É lento (${n1(L1('drain').speed)} m/s) e o Escudo devolve.`],
   snowball: ['Quem encosta é arrastado junto: role na direção da lava. No fim do caminho ela explode.', `Muito lenta (${n1(L1('snowball').speed)} m/s) e de alcance curto: dá para sair da frente.`],
-  illusion: [`Cria uma cópia no seu lugar, que segue reto na direção do seu movimento por ${n1(L1('illusion').duration)} s. Você pode se mover livremente, invisível, até ela sumir. A cópia não é destruída por golpes, mas pode ser empurrada.`, 'Mísseis teleguiados e bots são enganados pela cópia.'],
+  illusion: [`Cria uma cópia no seu lugar, que segue reto na direção do seu movimento por ${n1(L1('illusion').duration)} s. Você pode se mover livremente, invisível, até ela sumir. Lançar outra magia ou liberar Atacar encerra a invisibilidade; receber dano não a cancela. A cópia não é destruída por golpes, mas pode ser empurrada.`, 'Mísseis teleguiados e bots são enganados pela cópia.'],
   magnetize: ['Magnetize o inimigo e atire perto dele: os seus projéteis curvam até ele. Em você ou num aliado, afasta os projéteis inimigos.', 'Só curva projéteis que passam perto (menos de 2 m).'],
   recharge: [`Se acertar, ela volta até você e zera a recarga: lance de novo, com +${RECHARGE.perHit} de dano por acerto seguido.`, `Errar zera a sequência e a recarga é longa (${n1(L1('recharge').cd)} s no nível 1).`],
   alteration: [`Ligue quando um projétil estiver chegando: por ${n1(L1('alteration').duration)} s você troca de lugar com o primeiro que entrar na bolha.`, 'Não serve contra Eletrocutar, Meteoro, Flagelo e explosões, que não são projéteis.'],
@@ -304,9 +305,9 @@ const SPELL_TIPS_EN: SpellTips = {
   teleport: ['Get back from the lava to the rock or get out of a projectile\'s path. It is the only spell that goes off during your Scourge windup (and cancels it).', `Whoever reads the jump shoots at the landing point. Long cooldown at the start (${n1(L1('teleport').cd)} s).`],
   swap: ['Stand near the lava and swap: the enemy goes to your bad spot. Missed? You go halfway along your aim, which also works as an escape.', 'The Shield blocks Swap: nobody moves.'],
   grip: [`Mark the ground: vines erupt after ${n1(GRIP.delay)} s and root enemies in the area. The releasing hit knocks back farther (+${pct(L1('grip').scale)} at level 1).`, 'Prevents walking and movement spells; other spells remain available. Does not root allies. An active Shield reduces root duration by 40%. Stun prevents movement and all spells.'],
-  meteor: [`Aim where the enemy will be in ${METEOR_DELAY.toLocaleString(LOCALE)} s, or at someone gripped or casting. Damage is greater at the center; stuns for 1.25 s without knockback.`, 'You can walk out of the mark. An active Shield prevents damage and reduces stun duration.'],
-  rush: [`The ${n1(RUSH.dash)} m dash goes off instantly and anyone you touch takes ${RUSH.dashDmg} damage. During Rush, half of each hit becomes speed (up to the level cap).`, 'Only the damage is absorbed: knockback still applies.'],
-  cluster: ['Up close all 4 projectiles hit together: lots of damage and knockback.', `Short range (${n1(L1('cluster').range)} m): misses from afar.`],
+  meteor: [`Aim where the enemy will be in ${METEOR_DELAY.toLocaleString(LOCALE)} s, or at someone gripped or casting. Damage is greater at the center; stuns for ${n1(L1('meteor').duration)} s without knockback.`, 'You can walk out of the mark. An active Shield prevents damage and reduces stun duration.'],
+  rush: [`The ${n1(RUSH.dash)} m dash lasts ${n1(RUSH.dashTime)} s and ends without automatic walking and anyone you touch takes ${RUSH.dashDmg} damage. During Rush, ${pct(RUSH.share)} of each hit becomes speed (up to the level cap).`, 'Only the damage is absorbed: knockback still applies.'],
+  cluster: ['Up close all 4 projectiles hit together: lots of damage and knockback. Its projectiles collide with enemy spells in flight and both are destroyed; persistent areas and the Illusion copy are not erased.', `Short range (${n1(L1('cluster').range)} m): misses from afar.`],
   boomerang: ['Hits on the way out and on the way back: leave the enemy between you and the point. Bounces off obstacles.', 'On the Shield it bounces and comes back without changing owner.'],
   thrust: ['Full damage comes with speed: start from afar. You stop at the first enemy you touch.', 'On the Shield you bounce off. If you miss, you brake at the end of the path.'],
   gravity: [`Throw it into the middle of a group: it pulls enemies within ${n1(GRAVITY.wizR)} m and burns anyone within ${n1(L1('gravity').radius)} m. It also pulls projectiles from any owner.`, `It is slow (${n1(L1('gravity').speed)} m/s): you can walk away.`],
@@ -314,7 +315,7 @@ const SPELL_TIPS_EN: SpellTips = {
   bouncer: [`Best with enemies grouped: it jumps to the nearest wizard, losing ${pct(1 - BOUNCER.decay)} of the damage per enemy.`, 'Against a lone enemy it is just one hit.'],
   drain: ['Aim near the group: after the point, it turns to the nearest wizard. On an enemy, damage, slow and the health comes back to you; on an ally, heal and haste.', `It is slow (${n1(L1('drain').speed)} m/s) and the Shield reflects it.`],
   snowball: ['Anyone it touches is dragged along: roll toward the lava. At the end of the path it explodes.', `Very slow (${n1(L1('snowball').speed)} m/s) and short range: you can step out of the way.`],
-  illusion: [`Creates a copy at your location that moves straight in your current direction for ${n1(L1('illusion').duration)} s. You can move freely while invisible until it vanishes. The copy cannot be destroyed by attacks, but can be pushed.`, 'Homing missiles and bots are fooled by the copy.'],
+  illusion: [`Creates a copy at your location that moves straight in your current direction for ${n1(L1('illusion').duration)} s. You can move freely while invisible until it vanishes. Casting another spell or releasing Attack ends invisibility; taking damage does not cancel it. The copy cannot be destroyed by attacks, but can be pushed.`, 'Homing missiles and bots are fooled by the copy.'],
   magnetize: ['Magnetize the enemy and fire near them: your projectiles curve toward them. On yourself or an ally, it repels enemy projectiles.', 'Only curves projectiles that pass close by (under 2 m).'],
   recharge: [`If it hits, it comes back to you and resets the cooldown: cast again, with +${RECHARGE.perHit} damage per consecutive hit.`, `A miss resets the streak and the cooldown is long (${n1(L1('recharge').cd)} s at level 1).`],
   alteration: [`Turn it on when a projectile is about to arrive: for ${n1(L1('alteration').duration)} s you swap places with the first one that enters the bubble.`, 'Useless against Electrocute, Meteor, Scourge and explosions, which are not projectiles.'],
@@ -342,8 +343,8 @@ export const ITEM_DEMO = LANG === 'en' ? ITEM_DEMO_EN : ITEM_DEMO_PT;
 // loja e ajuda: magias agrupadas pelo efeito principal (o que cada uma faz está em RULES_SHORT)
 type SpellGroups = [name: string, hint: string, spells: SpellId[]][];
 // as listas moram em spells.ts (SPELL_GROUP_IDS), que o sorteio das cartas do Ascensão também usa
-// Reclassificação visual; a Ascensão mantém os pesos de cartas atuais.
-const G = { ...SPELL_GROUP_IDS, attack: SPELL_GROUP_IDS.attack.filter((s) => s !== 'lightning' && s !== 'meteor'), control: [...SPELL_GROUP_IDS.control, 'meteor' as const, 'lightning' as const] };
+// Reclassificação visual na loja/consulta, sem mudar pesos do sorteio de cartas da Ascensão.
+const G = { ...SPELL_GROUP_IDS, attack: SPELL_GROUP_IDS.attack.filter((s) => s !== 'meteor' && s !== 'lightning'), control: [...SPELL_GROUP_IDS.control, 'meteor' as const, 'lightning' as const] };
 const SPELL_GROUPS_PT: SpellGroups = [
   ['Ataque', 'dano e empurrão', [...G.attack]],
   ['Mobilidade', 'sair do lugar', [...G.mobility]],
@@ -435,13 +436,13 @@ const RULES_SHORT_PT: Record<SpellId, string> = {
   fireball: 'Projétil reto. Dano e empurrão médios.',
   lightning: 'Instantâneo. Do primeiro mago na linha, quica para inimigos próximos sem repetir alvo no mesmo lançamento e sem limite fixo de saltos. Alcance fixo; cada salto conserva 50% do dano e empurrão anteriores. Por 2 s: efeito elétrico, lentidão de 25% e Incapacitar, que pausa recargas sem impedir habilidades prontas. Outro lançamento pode acertar os mesmos alvos. Destrói projéteis no trajeto.',
   homing: `Persegue por ${n1(L1('homing').duration)} s o inimigo mais perto da mira, virando devagar.`,
-  shield: `Por ${n1(L1('shield').duration)} s, impede dano, devolve projéteis e Eletrocutar e reduz em 40% a duração dos novos status.`,
+  shield: `Por ${n1(L1('shield').duration)} s, impede dano, devolve projéteis e Eletrocutar. Recebe ${pct(SHIELD.knock)} do novo empurrão e ${pct(SHIELD.statusDuration)} da duração dos novos status; ativar depois não altera efeitos anteriores.`,
   teleport: 'Salta até o cursor (alcance curto).',
   swap: 'Voa até o alcance e troca de lugar com o primeiro mago que tocar; sem ninguém, leva você até a metade do caminho da mira.',
-  grip: `Cipós nascem na área marcada após ${n1(GRIP.delay)} s e prendem até o primeiro golpe, que solta e empurra mais longe.`,
-  meteor: `Cai em área no ponto marcado, ${METEOR_DELAY.toLocaleString(LOCALE)} s depois. Causa dano e atordoa por 1,25 s, sem empurrão.`,
+  grip: `Cipós nascem na área marcada após ${n1(GRIP.delay)} s. Impede andar e magias de movimento, mas permite as outras. Dura até o prazo ou o primeiro golpe com dano de outro mago, que solta e empurra mais longe.`,
+  meteor: `Cai em área no ponto marcado, ${n1(METEOR_DELAY)} s depois. Causa dano e atordoa por ${n1(L1('meteor').duration)} s, sem empurrão. Atordoamento impede caminhar e conjurar qualquer magia.`,
   rush: `Avança ${n1(RUSH.dash)} m na direção da mira e fica mais rápido; parte do dano levado vira mais velocidade.`,
-  cluster: 'Quatro projéteis em leque, curto alcance.',
+  cluster: 'Quatro projéteis em leque, curto alcance. Projéteis colidem com magias inimigas em voo e ambos se destroem; áreas persistentes não são destruídas.',
   boomerang: 'Vai em curva até o ponto e volta para você; acerta na ida e na volta.',
   thrust: 'Você dispara até o ponto; o primeiro inimigo que tocar leva dano conforme a sua velocidade.',
   gravity: 'Orbe lento que puxa magos inimigos e projéteis e queima quem fica perto.',
@@ -449,7 +450,7 @@ const RULES_SHORT_PT: Record<SpellId, string> = {
   bouncer: `Acerta e pula para o mago mais perto, perdendo ${pct(1 - BOUNCER.decay)} do dano a cada inimigo.`,
   drain: 'Vai até o ponto e vira para o mago mais perto: no inimigo, dano, lentidão e a vida volta para você; no aliado, cura e acelera.',
   snowball: 'Bola lenta que atravessa e arrasta quem encosta, com dano, e explode no fim do caminho.',
-  illusion: `Uma cópia nasce no seu lugar e segue reto na direção do seu movimento por ${n1(L1('illusion').duration)} s; você pode se mover livremente, invisível, até ela sumir. A cópia não é destruída, mas pode ser empurrada. O Míssil teleguiado e os bots miram nela. Recarga ${n1(L1('illusion').cd)} s.`,
+  illusion: `Uma cópia nasce no seu lugar e segue reto na direção do seu movimento por ${n1(L1('illusion').duration)} s; você pode se mover livremente, invisível, até ela sumir. Lançar outra magia ou liberar Atacar encerra a invisibilidade; receber dano não a cancela. A cópia não é destruída, mas pode ser empurrada. O Míssil teleguiado e os bots miram nela. Recarga ${n1(L1('illusion').cd)} s.`,
   magnetize: 'No inimigo, puxa para ele os projéteis dos outros; num aliado ou em você (depois de quicar), afasta.',
   recharge: 'Se acertar, volta e zera a própria recarga; cada acerto seguido soma dano.',
   alteration: `Por ${n1(L1('alteration').duration)} s, troca de lugar com o primeiro projétil inimigo que chegar perto.`,
@@ -464,13 +465,13 @@ const RULES_SHORT_EN: Record<SpellId, string> = {
   fireball: 'Straight projectile. Medium damage and knockback.',
   lightning: 'Instant. From the first wizard in line, jumps to nearby enemies without repeating targets in the same cast or a fixed jump limit. Fixed range; each jump keeps 50% of the previous damage and knockback. For 2 s: electrical effect, 25% slow and Incapacitate, which pauses cooldowns without blocking ready abilities. A new cast can hit the same targets. Destroys projectiles along its path.',
   homing: `Chases the enemy closest to your aim for ${n1(L1('homing').duration)} s, turning slowly.`,
-  shield: `For ${n1(L1('shield').duration)} s, prevents damage, reflects projectiles and Electrocute, and reduces new status durations by 40%.`,
+  shield: `For ${n1(L1('shield').duration)} s, prevents damage and reflects projectiles and Electrocute. Receives ${pct(SHIELD.knock)} of new knockback and ${pct(SHIELD.statusDuration)} of new status duration; activating later does not change existing effects.`,
   teleport: 'Jumps to the cursor (short range).',
   swap: 'Flies to its range and swaps places with the first wizard it touches; with no one, takes you halfway along your aim.',
-  grip: `Vines erupt in the marked area after ${n1(GRIP.delay)} s and root until the first hit, which releases and knocks back farther.`,
-  meteor: `Falls over an area at the marked point, ${METEOR_DELAY.toLocaleString(LOCALE)} s later. Deals damage and stuns for 1.25 s, without knockback.`,
+  grip: `Vines erupt in the marked area after ${n1(GRIP.delay)} s. Prevents walking and movement spells, but allows other spells. Lasts until the timer or the first damaging hit from another wizard, which releases and knocks back farther.`,
+  meteor: `Falls over an area at the marked point, ${n1(METEOR_DELAY)} s later. Deals damage and stuns for ${n1(L1('meteor').duration)} s, without knockback. Stun prevents walking and casting any spell.`,
   rush: `Dashes ${n1(RUSH.dash)} m toward your aim and makes you faster; part of the damage you take becomes more speed.`,
-  cluster: 'Four projectiles in a fan, short range.',
+  cluster: 'Four projectiles in a fan, short range. Projectiles collide with enemy spells in flight and both are destroyed; persistent areas are not destroyed.',
   boomerang: 'Curves to the point and comes back to you; hits on the way out and on the way back.',
   thrust: 'You dash to the point; the first enemy you touch takes damage based on your speed.',
   gravity: 'Slow orb that pulls enemy wizards and projectiles and burns anyone close.',
@@ -478,7 +479,7 @@ const RULES_SHORT_EN: Record<SpellId, string> = {
   bouncer: `Hits and jumps to the nearest wizard, losing ${pct(1 - BOUNCER.decay)} of the damage per enemy.`,
   drain: 'Goes to the point and turns to the nearest wizard: on an enemy, damage, slow and the health comes back to you; on an ally, heal and haste.',
   snowball: 'Slow ball that passes through and drags anyone it touches, with damage, and explodes at the end of the path.',
-  illusion: `A copy starts at your location and moves straight in your current direction for ${n1(L1('illusion').duration)} s; you can move freely while invisible until it vanishes. The copy cannot be destroyed, but can be pushed. The Homing Missile and bots aim at it. Cooldown ${n1(L1('illusion').cd)} s.`,
+  illusion: `A copy starts at your location and moves straight in your current direction for ${n1(L1('illusion').duration)} s; you can move freely while invisible until it vanishes. Casting another spell or releasing Attack ends invisibility; taking damage does not cancel it. The copy cannot be destroyed, but can be pushed. The Homing Missile and bots aim at it. Cooldown ${n1(L1('illusion').cd)} s.`,
   magnetize: "On an enemy, pulls other casters' projectiles toward them; on an ally or on you (after a bounce), repels them.",
   recharge: 'If it hits, it comes back and resets its own cooldown; each consecutive hit adds damage.',
   alteration: `For ${n1(L1('alteration').duration)} s, swaps places with the first enemy projectile that comes close.`,

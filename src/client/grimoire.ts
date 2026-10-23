@@ -22,8 +22,8 @@ const STORE = 'warlock:grimoire';
 const html = (s: string) => Object.assign(document.createElement('div'), { className: 'g-html', innerHTML: s });
 const ul = (xs: string[]) => el('ul', {}, ...xs.map((x) => el('li', {}, x)));
 const LEGEND = t(
-  `Dano: vida que tira (cada mago tem ${HP_MAX}). Empurrão: metros que um mago sem dano acumulado desliza (+10% a cada 100 de dano já levado). Recarga: segundos até lançar de novo. Alcance e raio em metros (a arena de 4 magos tem ${n1(ARENA_R0)} m de raio).`,
-  `Damage: health it takes away (each wizard has ${HP_MAX}). Knockback: meters a wizard with no accumulated damage slides (+10% per 100 damage already taken). Cooldown: seconds until you can cast again. Range and radius in meters (the 4-wizard arena has a ${n1(ARENA_R0)} m radius).`,
+  `Dano: vida que tira (cada mago tem ${HP_MAX}). Empurrão: deslocamento de referência sem resistência; dano histórico não amplifica a força. Recarga: segundos até lançar de novo. Alcance e raio em metros (a arena de 4 magos tem ${n1(ARENA_R0)} m de raio).`,
+  `Damage: health it takes away (each wizard has ${HP_MAX}). Knockback: reference displacement without resistance; historical damage does not amplify force. Cooldown: seconds until you can cast again. Range and radius in meters (the 4-wizard arena has a ${n1(ARENA_R0)} m radius).`,
 );
 // capítulos: o texto mostrado também serve de chave nas comparações abaixo
 const CH = {

@@ -1,19 +1,19 @@
 // Demonstração animada do grimório: um canvas 2D visto de cima rodando a simulação de verdade (newWorld/stepWorld)
 // com magos de treino e um roteiro fixo em loop. Como usa os números do jogo, a demo acompanha qualquer balanceamento.
 import { SHAPES, type ArenaId } from '../shared/arena.ts';
-import { BASIC_ATTACK, DT, OBSTACLES, PROJ_R, WIZ_R } from '../shared/constants.ts';
+import { BASIC_ATTACK, BRACE, DT, KNOCK_RECOVERY, OBSTACLES, PROJ_R, WIZ_R } from '../shared/constants.ts';
 import { ITEMS, noItems, type ItemId } from '../shared/items.ts';
-import { newWorld, snowR, spellOf, stepWorld, type Cmd, type SimEvent, type World } from '../shared/sim.ts';
-import { CAST_POINT, GRIP, isSpell, noSpells, spellLevel, type SpellId } from '../shared/spells.ts';
+import { bracingActive, incapacitatedUntil, isStunned, newWorld, snowR, spellOf, stepWorld, type Cmd, type SimEvent, type Wizard, type World } from '../shared/sim.ts';
+import { CAST_POINT, GRIP, METEOR_DELAY, SHIELD, isSpell, noSpells, spellLevel, type SpellId } from '../shared/spells.ts';
 import { add, scale, v, type Vec } from '../shared/vec.ts';
 import { LOCALE, spellName, t } from './i18n.ts';
 import { electroPulse } from './screen-data.ts';
 
 // alvo do passo: ponto fixo ou a posição atual do mago com esse índice
 type At = Vec | number;
-type Step = [t: number, who: number, what: SpellId | 'move' | 'basic', at: At];
+type Step = [t: number, who: number, what: SpellId | 'move' | 'basic' | 'braceOn' | 'braceOff', at: At];
 type Script = { pos?: Vec[]; end: number; steps: Step[]; prep?: (w: World) => void };
-export type DemoId = SpellId | ItemId | 'clash' | 'basic';
+export type DemoId = SpellId | ItemId | 'clash' | 'basic' | 'brace' | 'knockback';
 
 const A = 0, B = 1, C = 2;
 // arena menor que a de verdade para a lava aparecer no quadro
@@ -27,18 +27,23 @@ const VINE_COLOR = '#8ed64b';
 
 // mago 0 é "você" (com a magia ou o item da página); 1 e 2 são de treino e só têm a Bola de fogo
 export const SCRIPTS: Partial<Record<DemoId, Script>> = {
+  knockback: { pos: [v(-3, 0), v(0, 0)], end: 3.5, steps: [[.4, A, 'fireball', B], [.85, B, 'move', v(0, 4)]], prep: (w) => { w.pillars = []; } },
   basic: { pos: [v(-2, 0), v(-1, 0), v(4, 0)], end: 3.5, steps: [[.4, A, 'basic', B], [1.8, A, 'basic', C]], prep: (w) => { w.pillars = []; } },
+  // Renova o mesmo comando da partida: o preparo e a pausa vêm da simulação, não de uma animação inventada.
+  brace: { pos: [v(-1, 0), v(3, 0)], end: 3.5,
+    steps: ([...Array.from({ length: 19 }, (_, i): Step => [.4 + i * .1, A, 'braceOn', A]), [1.2, A, 'move', v(-1, 3)], [1.3, B, 'fireball', A], [2.3, A, 'braceOff', A], [2.6, A, 'move', v(-1, 3)]] as Step[]).sort((a, b) => a[0] - b[0]),
+    prep: (w) => { w.pillars = []; w.wizards[A].cd.fireball = 5; } },
   fireball: { end: 3.2, steps: [[0.4, A, 'fireball', B]] },
   // Três inimigos mostram a cadeia100/50/25; o primeiro salto já exige o alcance fixo completo.
   lightning: { pos: [v(-4, 0), v(-1, 0), v(4, 0), v(4, 3)], end: 3.5, steps: [[0.4, A, 'lightning', B]], prep: (w) => { w.pillars = []; for (const z of w.wizards.slice(1)) z.cd.fireball = 3; } },
   homing: { end: 3.6, steps: [[0.2, B, 'move', v(2, 4)], [0.4, A, 'homing', B]] },
-  shield: { end: 2.8, steps: [[0.3, B, 'fireball', A], [0.7, A, 'shield', B]] },
+  shield: { pos: [v(-2, 0), v(2, 0), v(1, 3)], end: 3.2, steps: [[.2, C, 'meteor', A], [.3, B, 'fireball', A], [.6, A, 'shield', B]], prep: (w) => { w.pillars = []; w.wizards[C].spells.meteor = 1; } },
   teleport: { end: 2.4, steps: [[0.3, B, 'fireball', A], [0.75, A, 'teleport', v(-3, 3.5)]] },
   swap: { pos: [v(-4.6, 0), v(1, 0), v(1.6, 2)], end: 3.4, steps: [[0.4, A, 'swap', B], [1.3, A, 'fireball', B]] },
-  grip: { pos: [v(-3, 0), v(2, 0), v(2.6, .9)], end: GRIP_ROOT_AT + 3.4, steps: [[GRIP_CAST_AT, A, 'grip', v(2.3, .45)], [GRIP_ROOT_AT + .2, B, 'move', v(2, 4)], [GRIP_ROOT_AT + .2, C, 'move', v(4, .9)], [GRIP_ROOT_AT + 1, A, 'fireball', B], [GRIP_ROOT_AT + spellLevel('grip', 1).duration + .2, C, 'move', v(2.6, 3)]] },
-  meteor: { pos: [v(-3, 0), v(2, 0), v(2.6, 0.9)], end: 3, steps: [[0.4, A, 'meteor', v(2.3, 0.45)]] },
+  grip: { pos: [v(-3, 0), v(2, 0), v(2.6, .9)], end: GRIP_ROOT_AT + 3.4, steps: [[GRIP_CAST_AT, A, 'grip', v(2.3, .45)], [GRIP_ROOT_AT + .2, B, 'move', v(2, 4)], [GRIP_ROOT_AT + .2, C, 'move', v(4, .9)], [GRIP_ROOT_AT + .3, B, 'teleport', v(2, 4)], [GRIP_ROOT_AT + .3, C, 'shield', C], [GRIP_ROOT_AT + 1, A, 'fireball', B], [GRIP_ROOT_AT + spellLevel('grip', 1).duration + .2, C, 'move', v(2.6, 3)]], prep: (w) => { w.wizards[B].spells.teleport = 1; w.wizards[C].spells.shield = 1; } },
+  meteor: { pos: [v(-3, 0), v(2, 0), v(2.6, 0.9)], end: 3.8, steps: [[.4, A, 'meteor', v(2.3, .45)], [.4 + CAST_POINT.meteor + METEOR_DELAY + .2, B, 'move', v(2, 4)], [.4 + CAST_POINT.meteor + METEOR_DELAY + .2, B, 'fireball', A], [3.2, B, 'move', v(2, 4)]] },
   rush: { pos: [v(-3, 0), v(-0.6, 0.3), v(2.6, 1.6)], end: 3, steps: [[0.4, A, 'rush', v(1, 0)], [0.7, A, 'move', v(1, 3)], [1.2, C, 'fireball', A]] },
-  cluster: { pos: [v(-3, 0), v(0.5, 0), v(1, 0.9)], end: 2.8, steps: [[0.4, A, 'cluster', v(0.6, 0.3)]] },
+  cluster: { pos: [v(-3, 0), v(.5, .8), v(3, 0)], end: 3, steps: [[.25, C, 'fireball', A], [.4, A, 'cluster', v(3, 0)]], prep: (w) => { w.pillars = []; } },
   boomerang: { end: 3.4, steps: [[0.4, A, 'boomerang', B]] },
   thrust: { end: 2.6, steps: [[0.4, A, 'thrust', B]] },
   gravity: { end: 3.4, steps: [[0.4, A, 'gravity', v(2, 0.8)]] },
@@ -46,7 +51,7 @@ export const SCRIPTS: Partial<Record<DemoId, Script>> = {
   bouncer: { pos: [v(-3, 0), v(1.5, 0), v(2.5, 1.8)], end: 3, steps: [[0.4, A, 'bouncer', B]] },
   drain: { pos: [v(-3, 0), v(2, 0.6), v(2.6, -1.8)], end: 3.6, steps: [[0.4, A, 'drain', v(1.5, 0)]], prep: (w) => (w.wizards[A].hp = 700) },
   snowball: { pos: [v(-3, 0), v(-0.6, 0.1), v(0.3, -0.5)], end: 3, steps: [[0.4, A, 'snowball', v(1, 0)]] },
-  illusion: { end: 2.9, steps: [[0.1, A, 'move', v(-3, 3)], [0.5, A, 'illusion', B], [1.4, B, 'fireball', A]] }, // a cópia segue o movimento e o dono fica invisível por toda a duração
+  illusion: { end: 3.2, steps: [[.1, A, 'move', v(-3, 3)], [.5, A, 'illusion', B], [.65, A, 'move', v(-1, -2)], [.8, B, 'homing', A]], prep: (w) => { w.pillars = []; w.wizards[B].spells.homing = 1; } }, // dono muda o destino; a cópia continua reta e engana o míssil.
   magnetize: { end: 3.4, steps: [[0.3, A, 'magnetize', B], [1.4, A, 'fireball', v(2, 1.3)]] },
   recharge: { end: 4.6, steps: [[0.4, A, 'recharge', B], ...[2.4, 2.7, 3, 3.3].map((t): Step => [t, A, 'recharge', B])] },
   alteration: { end: 2.6, steps: [[0.3, B, 'fireball', A], [0.5, A, 'alteration', B]] },
@@ -62,10 +67,34 @@ export const SCRIPTS: Partial<Record<DemoId, Script>> = {
 
 type DemoState = { w: World; script: Script; next: number; events: SimEvent[] };
 
+// Rótulos seguem os estados reais para a prévia não sugerir que stun, prisão e postura têm o mesmo bloqueio.
+export function demoStatus(w: World, z: Wizard): string[] {
+  const left = (until: number) => Math.max(0, until - w.t).toLocaleString(LOCALE, { maximumFractionDigits: 1 });
+  const labels: string[] = [];
+  if (w.t < z.shieldUntil) labels.push(t(`dano 0 · empurrão/status ${Math.round(SHIELD.knock * 100)}%`, `damage 0 · knockback/status ${Math.round(SHIELD.knock * 100)}%`));
+  if (isStunned(z)) labels.push(z.stunLeft === undefined ? t('atordoado durante o deslize · sem ações', 'stunned while sliding · no actions') : t(`atordoado ${Math.max(0, z.stunLeft).toLocaleString(LOCALE, { maximumFractionDigits: 1 })} s · sem ações`, `stunned ${Math.max(0, z.stunLeft).toLocaleString(LOCALE, { maximumFractionDigits: 1 })} s · no actions`));
+  if (w.t < z.gripUntil) labels.push(t(`preso ${left(z.gripUntil)} s · sem mobilidade`, `gripped ${left(z.gripUntil)} s · no mobility`));
+  if (w.t < z.slowUntil || z.zone & 1 || w.t < (z.electroUntil ?? 0)) labels.push(t('lentidão · caminhada reduzida', 'slow · reduced walking speed'));
+  if (w.t < incapacitatedUntil(z, w.t)) labels.push(t('incapacitado · recargas pausadas', 'incapacitated · cooldowns paused'));
+  if (z.zone & 2) labels.push(t('queimando · dano contínuo', 'burning · continuous damage'));
+  if (w.t < z.magnetUntil && z.magnet > 0) labels.push(t('magnetizado · atrai projéteis', 'magnetized · attracts projectiles'));
+  if (w.projectiles.some((p) => p.kind === 'link' && p.target === z.id)) labels.push(t('Elo · puxão', 'tether · pull'));
+  if ((z.recoveryLeft ?? 0) > 1e-8) {
+    const fraction = KNOCK_RECOVERY.start + KNOCK_RECOVERY.step * Math.floor((KNOCK_RECOVERY.seconds - z.recoveryLeft! + 1e-8) / KNOCK_RECOVERY.interval);
+    labels.push(t(`recuperação · caminhada ${Math.round(fraction * 100)}%`, `recovery · walking ${Math.round(fraction * 100)}%`));
+  }
+  if (w.t < z.veilUntil) labels.push(t(`invisível ${left(z.veilUntil)} s`, `invisible ${left(z.veilUntil)} s`));
+  if (bracingActive(w, z)) labels.push(t(`Manter base · resistência ${Math.round(BRACE.resistance * 100)}%`, `Hold ground · ${Math.round(BRACE.resistance * 100)}% resistance`));
+  else if (w.t < (z.braceUntil ?? 0)) labels.push(t(`preparando base ${left(z.braceReadyAt!)} s`, `preparing stance ${left(z.braceReadyAt!)} s`));
+  if (w.t < z.dashUntil) labels.push(t('avançando', 'dashing'));
+  else if (w.t < z.rushUntil) labels.push(t('avanço encerrado · absorção ativa', 'dash ended · absorption active'));
+  return labels;
+}
+
 export function demoWorld(id: DemoId): DemoState {
   const script = SCRIPTS[id]!;
   const pos = script.pos ?? [v(-3, 0), v(2, 0), v(2.6, 1.6)];
-  const ids = pos.map((_, i) => i < 3 ? 'abc'[i] : `demo${i}`);
+  const ids = pos.map((_, i) => String.fromCharCode(97 + i)); // roteiros com mais de três magos precisam de ids próprios.
   const spell = isSpell(id) ? { [id]: 1 } : {};
   const item = id in ITEMS ? { [id]: 1 } : {};
   const w = newWorld(ids, Object.fromEntries(ids.map((k, i) => [k, { ...noSpells(), ...(i === A ? spell : {}) }])), { a: { ...noItems(), ...item } }, 0, () => 0.5, false, {}, RULES, 'circle');
@@ -84,7 +113,7 @@ export function demoStep(s: DemoState) {
     const [, who, what, at] = script.steps[s.next];
     const id = w.wizards[who].id;
     const to = typeof at === 'number' ? { ...w.wizards[at].pos } : at;
-    cmds.push(what === 'move' ? { id, kind: 'move', to } : what === 'basic' ? { id, kind: 'basic', at: to, target: typeof at === 'number' ? w.wizards[at].id : undefined } : { id, kind: 'cast', spell: what, at: to });
+    cmds.push(what === 'move' ? { id, kind: 'move', to } : what === 'braceOn' || what === 'braceOff' ? { id, kind: 'brace', on: what === 'braceOn' } : what === 'basic' ? { id, kind: 'basic', at: to, target: typeof at === 'number' ? w.wizards[at].id : undefined } : { id, kind: 'cast', spell: what, at: to });
   }
   stepWorld(w, cmds, () => 0.5);
   s.events = w.events;
@@ -169,7 +198,7 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
       const col = PROJ_COLOR[p.kind] ?? '#fff';
       if (p.kind === 'meteor') {
         circle(p.pos, L.radius, 'rgba(255,90,26,.18)', col, true);
-        circle(p.pos, L.radius * Math.max(0, 1 - (p.until - w.t) / 1.15), 'rgba(255,90,26,.35)');
+        circle(p.pos, L.radius * Math.max(0, 1 - (p.until - w.t) / METEOR_DELAY), 'rgba(255,90,26,.35)');
       } else if (p.kind === 'grip') {
         circle(p.pos, L.radius, 'rgba(100,180,50,.12)', VINE_COLOR, true);
         circle(p.pos, L.radius * Math.max(0, 1 - (p.until - w.t) / GRIP.delay), 'rgba(100,180,50,.3)');
@@ -179,6 +208,7 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
         ctx.globalAlpha = 0.5;
         circle(p.pos, WIZ_R, colors[w.wizards.findIndex((z) => z.id === p.owner) % colors.length], '#1a0c08');
         ctx.globalAlpha = 1;
+        text(t('cópia · recebe empurrão', 'copy · takes knockback'), v(p.pos.x, p.pos.y - .75), '#9be7ff', .25);
       } else if (p.kind === 'gravity') {
         circle(p.pos, L.radius, 'rgba(160,107,255,.15)', col, true);
         circle(p.pos, PROJ_R * 1.4, col);
@@ -195,7 +225,7 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
         text(t('preparo ', 'windup ') + left.toLocaleString(LOCALE, { maximumFractionDigits: 1 }) + ' s', v(z.pos.x, z.pos.y + 1), '#9be7ff', .28);
         circle(z.pos, .15 + .25 * (1 - left / BASIC_ATTACK.windup), 'rgba(155,231,255,.3)');
       }
-      if (id === 'lightning' && i !== A) {
+      if ((id === 'lightning' && i !== A) || (id === 'brace' && i === A)) {
         const cd = Math.max(0, z.cd.fireball - w.t).toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
         text(t(`recarga: ${cd} s`, `cooldown: ${cd} s`), v(z.pos.x, z.pos.y + 1.15), '#c4a693', .25);
       }
@@ -209,6 +239,13 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
       if (w.t < z.shieldUntil) circle(z.pos, z.shieldR, 'rgba(255,214,102,.15)', '#ffd666');
       if (w.t < z.alterUntil) circle(z.pos, spellLevel('alteration', z.spells.alteration || 1).radius, 'rgba(110,230,255,.12)', '#6ee6ff', true);
       if (w.t < z.gripUntil) vines(z.pos, WIZ_R + .18);
+      if (isStunned(z)) circle(z.pos, WIZ_R + .3, null, '#ffd666', true);
+      if (bracingActive(w, z)) {
+        circle(z.pos, WIZ_R + .12, null, '#9be7ff');
+        // Silhueta esquemática de braço apoiado: a pose 3D continua sendo a do jogo, não reproduzida por este canvas.
+        line(z.pos, add(z.pos, v(.55, .3)), '#9be7ff', .12);
+        circle(add(z.pos, v(.55, .3)), .1, '#9be7ff');
+      }
       if (w.t < z.slowUntil) circle(z.pos, WIZ_R + 0.1, null, '#78aaff');
       if (w.t < z.magnetUntil) circle(z.pos, WIZ_R + 0.22, null, z.magnet > 0 ? '#ff5ad1' : '#9be7ff', true);
       if (w.t < z.rushUntil) circle(z.pos, WIZ_R + 0.12, null, '#ffb347');
@@ -221,6 +258,7 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
       ctx.fillRect(z.pos.x - 0.45, z.pos.y - 0.7, 0.9 * Math.max(0, z.hp / z.hpMax), 0.12);
       ctx.globalAlpha = 1;
       text(i === A ? t('você', 'you') : t('treino', 'practice'), v(z.pos.x, z.pos.y - 0.85), i === A ? '#ffd666' : '#c4a693', 0.32);
+      demoStatus(w, z).forEach((label, index) => text(label, v(z.pos.x, z.pos.y + 1.5 + index * .3), '#fff2a0', .22));
     });
     for (const { e, until } of fx) {
       const life = until - w.t;

@@ -31,7 +31,7 @@ describe('Eletrocutar: nome, grupo e demonstração', () => {
     const state = demoWorld('lightning'), events: SimEvent[] = [];
     while (state.w.t <= state.script.end) { demoStep(state); events.push(...state.events); }
     const hits = events.filter((e): e is Extract<SimEvent, { k: 'hit' }> => e.k === 'hit' && e.src === 'lightning');
-    expect(hits.map((e) => e.id)).toEqual(['b', 'c', 'demo3']);
+    expect(hits.map((e) => e.id)).toEqual(['b', 'c', 'd']);
     expect(hits.map((e) => e.dmg)).toEqual([70, 35, 18]);
     expect(events.filter((e) => e.k === 'lightning')).toHaveLength(3);
   });
