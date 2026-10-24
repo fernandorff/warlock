@@ -1,5 +1,5 @@
 // Sons: arquivos gravados (CC0 em public/sfx; as provocações do Leonard em public/taunts-local têm só a autorização dele; créditos em public/CREDITS.txt) e, enquanto não carregam ou se faltarem,
-// sons sintetizados na hora (Web Audio). Música e crepitar da lava em loop. O navegador só libera áudio depois de um toque.
+// sons sintetizados na hora (Web Audio). Música em loop. O navegador só libera áudio depois de um toque.
 import { tauntAudioSrc } from '../shared/taunts.ts';
 import { store } from './store.ts';
 
@@ -38,7 +38,6 @@ export function createSound(musicDefault?: number) {
   const music = new Audio('/music/battle.mp3');
   music.loop = true;
   music.preload = 'none'; // só baixa quando a partida toca (o lobby também cria o som, para o hover e o clique)
-  let lava: AudioBufferSourceNode | null = null;
   let wantAmbience = false;
   let duck = 1; // na loja a música abaixa um pouco
 
@@ -66,7 +65,7 @@ export function createSound(musicDefault?: number) {
       noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const data = noise.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-      const names = new Set([...Object.values(FILES).flat(), 'lava_loop']);
+      const names = new Set(Object.values(FILES).flat());
       void Promise.all([...names].map((name) => load(name))).then(syncAmbience);
     }
     if (ctx.state === 'suspended') void ctx.resume();
@@ -75,7 +74,7 @@ export function createSound(musicDefault?: number) {
   addEventListener('pointerdown', unlock);
   addEventListener('keydown', unlock);
 
-  // música e lava tocam só dentro da partida e com som ligado
+  // Música toca só dentro da partida e com som ligado; sem crepitar ambiente contínuo.
   function syncAmbience() {
     const vol = volumes();
     if (master) master.gain.value = 0.6 * vol.sfx;
@@ -83,20 +82,6 @@ export function createSound(musicDefault?: number) {
     const on = wantAmbience && !!ctx && ctx.state === 'running';
     if (on && vol.music > 0) void music.play().catch(() => {});
     else music.pause();
-    const buf = buffers.get('lava_loop');
-    if (on && vol.sfx > 0 && buf && !lava) {
-      const src = ctx!.createBufferSource();
-      src.buffer = buf;
-      src.loop = true;
-      const gain = ctx!.createGain();
-      gain.gain.value = 0.12;
-      src.connect(gain).connect(master!);
-      src.start();
-      lava = src;
-    } else if ((!on || vol.sfx === 0) && lava) {
-      lava.stop();
-      lava = null;
-    }
   }
 
   function file(name: string, volume: number, rate = 1) {
