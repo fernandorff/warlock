@@ -1,5 +1,5 @@
 import { inLavaAt, type ArenaId } from '../shared/arena.ts';
-import { ARENA_MIN, HP_MAX, HP_REGEN, RUNE, SHRINK_EVERY, STUN_SPEED, SUDDEN, WIZ_R, type RuneKind } from '../shared/constants.ts';
+import { ARENA_MIN, BASIC_ATTACK, HP_MAX, HP_REGEN, RUNE, SHRINK_EVERY, SUDDEN, WIZ_R, type RuneKind } from '../shared/constants.ts';
 import { lookOf } from '../shared/characters.ts';
 import { liveLevel, roundMult } from '../shared/ascension.ts';
 import type { BotSetup, PublicPlayer, PublicRoom, RoomInfo, ServerMsg, Snap } from '../shared/protocol.ts';
@@ -33,6 +33,7 @@ import { createPredict } from './predict.ts';
 import { createScene, type WizDraw } from './scene.ts';
 import { createSound, type SoundKind } from './sound.ts';
 import { distanceVolume } from './sound-distance.ts';
+import { BRACING_BIT } from '../shared/constants.ts';
 import { store } from './store.ts';
 import { SANDBOX_START } from './train.ts';
 import { TEAM_NAMES, TOUCH, WATCH_JOIN, askName, banner, createRoomUi, curtain, renderLobby, screen, srcName, toast } from './ui.ts';
@@ -380,8 +381,10 @@ function startRoom(code: string, name: string) {
   const volumeAt = (source?: Vec) => distanceVolume(myWizard(interp.latest())?.pos, source);
   const volumeOf = (id: string) => volumeAt(interp.latest()?.wizards.find((w) => w.id === id)?.pos);
 
-  function command(msg: { t: 'move'; x: number; y: number; held?: boolean } | { t: 'moveHold'; on: boolean } | { t: 'stop' } | { t: 'cast'; spell: SpellId; x: number; y: number }) {
+  let attackCancelSeq = 0;
+  function command(msg: { t: 'move'; x: number; y: number; held?: boolean } | { t: 'moveHold'; on: boolean } | { t: 'brace'; on: boolean } | { t: 'basic'; x: number; y: number; target?: string | number } | { t: 'stop' } | { t: 'cast'; spell: SpellId; x: number; y: number }) {
     seq++;
+    if (msg.t === 'move' || msg.t === 'stop' || msg.t === 'cast') attackCancelSeq = seq;
     sentAt.set(seq, performance.now());
     // teto do mapa de latência: o snapshot só confirma o último seq (e nada fora da rodada), então muito comando nunca tem ack
     if (sentAt.size > 50) sentAt.delete(sentAt.keys().next().value!);
@@ -391,11 +394,23 @@ function startRoom(code: string, name: string) {
   const input = createInput(canvas, {
     pick: (x, y) => scene.pick(x, y),
     move(to, held = false) {
+      if ((myWizard(interp.latest())?.status ?? 0) & BRACING_BIT) return;
       command({ t: 'move', x: to.x, y: to.y, held });
       predict.move(to);
       scene.clickMarker(to, false);
     },
     holdMove: (on) => command({ t: 'moveHold', on }),
+    brace: (on) => command({ t: 'brace', on }),
+    pickAttack: (x, y) => scene.pickMage(x, y),
+    attackArmedChanged: (on) => { canvas.style.cursor = on ? 'crosshair' : ''; },
+    basic(at, clicked) {
+      if ((myWizard(interp.latest())?.status ?? 0) & 16) return;
+      const target = clicked?.endsWith('~ilusao') ? interp.latest()?.projectiles.find((q) => q.kind === 'illusion' && room?.ids[q.vel.x] === clicked.slice(0, -7))?.id : clicked;
+      command({ t: 'basic', x: at.x, y: at.y, target });
+      predict.stop();
+      predict.hold(BASIC_ATTACK.windup, true);
+      scene.clickMarker(at, true);
+    },
     stop() {
       command({ t: 'stop' });
       predict.stop();
@@ -900,7 +915,7 @@ function startRoom(code: string, name: string) {
     const copies: WizDraw[] = (shown ? shown.projectiles : []).flatMap((q) => {
       const ownerId = q.kind === 'illusion' ? room?.ids[q.vel.x] : undefined;
       const o = drawWiz.find((d) => d.id === ownerId);
-      return o ? [{ ...o, id: ownerId + '~ilusao', pos: q.pos, facing: q.vel.y, status: o.status & ~(16 | 1024 | 2048 | 8388608), moving: true, cheer: false, illusion: true, ghost: false }] : [];
+      return o ? [{ ...o, id: ownerId + '~ilusao', pos: q.pos, facing: q.vel.y, status: o.status & ~(16 | 1024 | 2048 | 8388608), basicLeft: 0, moving: true, cheer: false, illusion: true, ghost: false }] : [];
     });
     // o desafio conta o tempo só com a rodada rolando; o progresso dele fica no lugar da dica do treino
     if (run?.state === 'on' && room?.phase === 'playing') finishRun(stepRun(run, dt, [], me, meW?.alive !== false));
@@ -991,11 +1006,12 @@ function startRoom(code: string, name: string) {
     const prev = live ? drawn : replayDrawn;
     return s.wizards.map((w) => {
       const p = byId.get(w.id);
-      const state = renderWizardState(w, server);
+      const state = { ...renderWizardState(w, server) };
+      if (live && w.id === me && (lastSnap?.ack ?? 0) < attackCancelSeq) state.basicLeft = 0;
       const status = sandboxVisibility(state.status, w.id === me, !!room?.sandbox, seeInvis);
       const pos = w.id === me && server ? predict.frame(server, dt) : w.pos;
       const prevDraw = prev.get(w.id);
-      // Só um comando real pode ligar a corrida; empurrão e reconciliação não são caminhada.
+      // O residual e a correção visual também deslocam o modelo: só um destino real pode ligar a corrida.
       const moving = !!(state.status & WALKING_BIT) && state.alive && (!!(state.status & HOLDING_MOVE_BIT) || !prevDraw || dist(prevDraw, pos) > 0.004);
       prev.set(w.id, pos);
       if (live && w.alive && room?.phase === 'playing') aliveAt[w.id] = s.time;

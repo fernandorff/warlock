@@ -10,7 +10,7 @@ describe('clique esquerdo não dá ordem de caminhada', () => {
   ])('roteamento: %j', (test) => {
     const branch = source.split("canvas.addEventListener('pointerdown', (e) => {")[1].split("\n  });")[0];
     const h = { pick: vi.fn(() => ({ x: 0, y: 0 })), move: vi.fn(), cast: vi.fn() };
-    const dispatch = new Function('e', 'h', 'armed', `let cursor, panFrom, dragging; const space=false, enabled=true; let panning=false; const arm=()=>{}; ${branch}`);
+    const dispatch = new Function('e', 'h', 'armed', `let cursor, panFrom, dragging, attackArmed = false; const space=false, enabled=true; let panning=false; const arm=()=>{}; ${branch}`);
     dispatch({ button: test.button, pointerType: test.touch ? 'touch' : 'mouse' }, h, test.armed);
     expect(h.move).toHaveBeenCalledTimes(test.move);
     expect(h.cast).toHaveBeenCalledTimes(test.cast);

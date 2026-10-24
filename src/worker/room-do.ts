@@ -143,16 +143,21 @@ export class Room extends DurableObject<Env> {
       case 'move':
       case 'moveHold':
       case 'stop':
+      case 'brace':
+      case 'basic':
       case 'cast':
         // comandos de jogo só valem com a rodada rolando (fora dela a fila cresceria sem limite)
         if (m.phase !== 'playing') return;
         if (msg.t === 'stop') this.cmds.push({ id, kind: 'stop' });
         else if (msg.t === 'moveHold') this.cmds.push({ id, kind: 'moveHold', on: msg.on });
+        else if (msg.t === 'brace') this.cmds.push({ id, kind: 'brace', on: msg.on });
         else {
           // o limite da coordenada depende da sala (arena ou mapa da Campanha), por isso não cabe no parser
           const at = cmdTarget(m.world?.map, msg.x, msg.y);
           if (!at) return send(ws, { t: 'error', code: 'bad_msg', msg: 'Mensagem inválida.' });
-          this.cmds.push(msg.t === 'move' ? { id, kind: 'move', to: at, held: msg.held } : { id, kind: 'cast', spell: msg.spell, at });
+          this.cmds.push(msg.t === 'move' ? { id, kind: 'move', to: at, held: msg.held }
+            : msg.t === 'basic' ? { id, kind: 'basic', at, target: typeof msg.target === 'string' ? byPublic(msg.target)?.id ?? '' : msg.target }
+            : { id, kind: 'cast', spell: msg.spell, at });
         }
         this.acks.set(id, msg.seq);
         return;
