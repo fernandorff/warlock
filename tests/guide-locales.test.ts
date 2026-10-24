@@ -18,8 +18,8 @@ describe('guias nas duas línguas', () => {
     for (const value of ['45', '51', '20', '19', '10']) expect(spellTip('heal', 1)).toContain(value);
     expect(spellTip('heal', 1)).toContain('data-demo="heal"');
     expect(MECHANIC_GUIDES.map((g) => g.title)).toEqual(lang === 'pt' ? ['Atacar', 'Manter base'] : ['Attack', 'Hold ground']);
-    expect(NEGATIVE_GUIDES).toHaveLength(9);
-    expect(new Set(NEGATIVE_GUIDES.map((g) => g.id)).size).toBe(9);
+    expect(NEGATIVE_GUIDES).toHaveLength(10);
+    expect(new Set(NEGATIVE_GUIDES.map((g) => g.id)).size).toBe(10);
     for (const g of NEGATIVE_GUIDES) {
       expect(g.text.length).toBeGreaterThan(80);
       expect(g).not.toHaveProperty('demo');

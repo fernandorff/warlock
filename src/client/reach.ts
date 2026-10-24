@@ -3,12 +3,13 @@
 import { OBSTACLES, PROJ_R, PROJ_SPAWN, WALL_GAP, WIZ_R } from '../shared/constants.ts';
 import { itemStats, type ItemId } from '../shared/items.ts';
 import { snowR, type ProjKind } from '../shared/sim.ts';
-import { CLUSTER_FAN, LIGHTNING, RUSH, SPLITTER, THRUST, spellLevel, type SpellId } from '../shared/spells.ts';
+import { conePoints } from '../shared/sand-cone.ts';
+import { LIGHTNING, RUSH, SPLITTER, THRUST, spellLevel, type SpellId } from '../shared/spells.ts';
 import { add, clampLen, len, norm, scale, sub, v, type Vec } from '../shared/vec.ts';
 
 // projéteis que saem na frente do mago e voam o alcance: o anel marca até onde a ponta chega, então inimigo que encosta
 // no anel é atingido (Fernando, 20/10, issue #82; antes ficava 0,8 m curto)
-const FLIES = new Set<SpellId>(['fireball', 'cluster', 'snowball', 'magnetize', 'gravity', 'bouncer', 'drain', 'recharge', 'link', 'splitter']);
+const FLIES = new Set<SpellId>(['fireball', 'snowball', 'magnetize', 'gravity', 'bouncer', 'drain', 'recharge', 'link', 'splitter']);
 
 export function reachOf(a: SpellId, spells: Record<SpellId, number>, items: Record<ItemId, number>): number {
   const lvl = spells[a];
@@ -42,7 +43,7 @@ const HALF: Partial<Record<SpellId, number>> = { lightning: LIGHTNING.width, ...
 export function aimOf(a: SpellId, spells: Record<SpellId, number>, items: Record<ItemId, number>, from: Vec, at: Vec) {
   const reach = reachOf(a, spells, items);
   const lvl = spells[a as SpellId];
-  const none = { segs: [] as [Vec, Vec][], half: 0, blastAt: null as Vec | null, blastR: 0 };
+  const none = { segs: [] as [Vec, Vec][], half: 0, blastAt: null as Vec | null, blastR: 0, cone: null as [Vec, Vec, Vec] | null };
   if (!reach) return none;
   const d = norm(sub(at, from));
   const tip = (r: number) => add(from, scale(d, r));
@@ -66,8 +67,7 @@ export function aimOf(a: SpellId, spells: Record<SpellId, number>, items: Record
     const r = spellLevel('gravity', lvl).radius - WIZ_R;
     return { ...line(tip(reach), r), blastAt: tip(reach - PROJ_R), blastR: r };
   }
-  const turn = (o: number) => v(d.x * Math.cos(o) - d.y * Math.sin(o), d.x * Math.sin(o) + d.y * Math.cos(o));
-  if (a === 'cluster') return { ...none, segs: CLUSTER_FAN.map((o) => [from, add(from, scale(turn(o), reach))] as [Vec, Vec]), half: HALF.cluster! };
+  if (a === 'cluster') return { ...none, cone: conePoints(from,d,reach,spellLevel(a,lvl).width*(1+itemStats(items).range)) };
   // Divisor: voa até o ponto mirado e estoura; o lançador segue devagar e solta 2 filhotes por onda, abrindo menos a cada uma
   // (a mesma conta de split/spawnShards em sim.ts: direção não normalizada, então os filhotes de fora vão mais curto)
   if (a === 'splitter') {

@@ -5,7 +5,7 @@ import { audioLevel, layerVolume } from './audio-level.ts';
 import { store } from './store.ts';
 
 export type SoundKind = 'fireball' | 'lightning' | 'homing' | 'shield' | 'teleport' | 'hit' | 'hitLight' | 'hitHeavy' | 'reflect' | 'death' | 'splash' | 'shrink' | 'beep' | 'go' | 'click'
-  | 'winRound' | 'loseRound' | 'buy' | 'error' | 'ready' | 'hover' | 'brace' | 'heal' | 'closedbody' | 'closedbodyEnd';
+  | 'winRound' | 'loseRound' | 'buy' | 'error' | 'ready' | 'hover' | 'brace' | 'heal' | 'closedbody' | 'closedbodyEnd' | 'sand';
 
 const FILES: Partial<Record<SoundKind, string[]>> = {
   brace: ['brace_activation'], closedbody: ['closed_body_start'], closedbodyEnd: ['closed_body_end'],
@@ -85,7 +85,7 @@ export function createSound(musicDefault?: number) {
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
       // Pré-renderiza a síntese fora do caminho de reprodução para medi-la pelo mesmo critério dos arquivos.
       if (typeof OfflineAudioContext !== 'undefined') {
-        const kinds: SoundKind[] = ['fireball', 'lightning', 'homing', 'shield', 'teleport', 'hit', 'hitLight', 'hitHeavy', 'reflect', 'death', 'splash', 'shrink', 'beep', 'go', 'click', 'winRound', 'loseRound', 'buy', 'error', 'ready', 'hover', 'heal'];
+        const kinds: SoundKind[] = ['fireball', 'lightning', 'homing', 'shield', 'teleport', 'hit', 'hitLight', 'hitHeavy', 'reflect', 'death', 'splash', 'shrink', 'beep', 'go', 'click', 'winRound', 'loseRound', 'buy', 'error', 'ready', 'hover', 'heal', 'sand'];
         for (const kind of kinds) {
           const offline = new OfflineAudioContext(1, ctx.sampleRate * 2, ctx.sampleRate);
           synth(kind, 1, offline, offline.destination);
@@ -173,6 +173,7 @@ export function createSound(musicDefault?: number) {
     const playTone = (type: OscillatorType, f0: number, f1: number, dur: number, gain: number, at = 0) => toneAt(type, f0, f1, dur, gain, at, c, output);
     const playHiss = (type: BiquadFilterType, f0: number, f1: number, dur: number, gain: number, at = 0) => hissAt(type, f0, f1, dur, gain, at, c, output);
       switch (kind) {
+      case 'sand': playHiss('bandpass',1800,600,.4,.4*v); break;
         // Harmônicos arredondados, ataque suave e vibrato imitam um coral em “ooooh”, sem gravação externa.
         case 'heal':
           [261.63, 329.63, 392].forEach((note, voice) => {

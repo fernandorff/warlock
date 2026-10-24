@@ -49,10 +49,11 @@ describe('auditoria de guias e prévias', () => {
     expect(rows).toContain(String(SHIELD.knock * 100));
     expect(play('shield').events.some((e) => e.k === 'hit' && e.id === 'a' && e.src === 'meteor' && e.dmg === 0)).toBe(true);
   });
-  it('Rajada explica colisões nas duas línguas e demonstra a destruição de projéteis', () => {
-    expect(RULES_SHORT_PT.cluster).toMatch(/projéteis.*(colidem|destroem)|colis/);
-    expect(RULES_SHORT_EN.cluster).toMatch(/collid|collision/);
-    expect(play('cluster').events.some((e) => e.k === 'clash')).toBe(true);
+  it('Rajada de areia explica cone e status sem destruição de projéteis', () => {
+    expect(RULES_SHORT_PT.cluster).toMatch(/Cone.*Cegueira/);
+    expect(RULES_SHORT_EN.cluster).toMatch(/cone.*Blindness/);
+    expect(play('cluster').events.some((e) => e.k === 'sand')).toBe(true);
+    expect(play('cluster').events.some((e) => e.k === 'clash')).toBe(false);
   });
   it('Meteoro demonstra stun e bloqueia tentativa de conjurar do alvo', () => {
     const { events, stunned } = play('meteor');

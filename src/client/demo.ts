@@ -4,11 +4,12 @@ import { SHAPES, type ArenaId } from '../shared/arena.ts';
 import { BASIC_ATTACK, BRACE, DT, KNOCK_RECOVERY, OBSTACLES, PROJ_R, WIZ_R } from '../shared/constants.ts';
 import { ITEMS, noItems, type ItemId } from '../shared/items.ts';
 import { bracingActive, incapacitatedUntil, isStunned, newWorld, snowR, spellOf, stepWorld, type Cmd, type SimEvent, type Wizard, type World } from '../shared/sim.ts';
-import { CAST_POINT, GRIP, METEOR_DELAY, SHIELD, isSpell, noSpells, spellLevel, type SpellId } from '../shared/spells.ts';
+import { BLINDNESS, CAST_POINT, GRIP, METEOR_DELAY, SHIELD, isSpell, noSpells, spellLevel, type SpellId } from '../shared/spells.ts';
 import { add, scale, v, type Vec } from '../shared/vec.ts';
 import { LOCALE, spellName, t } from './i18n.ts';
 import { electroPulse } from './screen-data.ts';
 import { HEAL_FX, healAura } from './heal-fx.ts';
+import { conePoints } from '../shared/sand-cone.ts';
 import { GEYSER_FX } from './geyser-fx.ts';
 
 // alvo do passo: ponto fixo ou a posição atual do mago com esse índice
@@ -54,7 +55,7 @@ export const SCRIPTS: Partial<Record<DemoId, Script>> = {
   grip: { pos: [v(-3, 0), v(2, 0), v(2.6, .9)], end: GRIP_ROOT_AT + 3.4, steps: [[GRIP_CAST_AT, A, 'grip', v(2.3, .45)], [GRIP_ROOT_AT + .2, B, 'move', v(2, 4)], [GRIP_ROOT_AT + .2, C, 'move', v(4, .9)], [GRIP_ROOT_AT + .3, B, 'teleport', v(2, 4)], [GRIP_ROOT_AT + .3, C, 'shield', C], [GRIP_ROOT_AT + 1, A, 'fireball', B], [GRIP_ROOT_AT + spellLevel('grip', 1).duration + .2, C, 'move', v(2.6, 3)]], prep: (w) => { w.wizards[B].spells.teleport = 1; w.wizards[C].spells.shield = 1; } },
   meteor: { pos: [v(-3, 0), v(2, 0), v(2.6, 0.9)], end: 3.8, steps: [[.4, A, 'meteor', v(2.3, .45)], [.4 + CAST_POINT.meteor + METEOR_DELAY + .2, B, 'move', v(2, 4)], [.4 + CAST_POINT.meteor + METEOR_DELAY + .2, B, 'fireball', A], [3.2, B, 'move', v(2, 4)]] },
   rush: { pos: [v(-3, 0), v(-0.6, 0.3), v(2.6, 1.6)], end: 3, steps: [[0.4, A, 'rush', v(1, 0)], [0.7, A, 'move', v(1, 3)], [1.2, C, 'fireball', A]] },
-  cluster: { pos: [v(-3, 0), v(.5, .8), v(3, 0)], end: 3, steps: [[.25, C, 'fireball', A], [.4, A, 'cluster', v(3, 0)]], prep: (w) => { w.pillars = []; } },
+  cluster: { pos: [v(-2,0),v(.5,.4),v(.5,2.5)], end:3.8, steps:[[.4,A,'cluster',v(1,0)],[1,B,'fireball',A]], prep:w=>{w.pillars=[];w.wizards[B].cd.fireball=3;w.wizards[B].regen=0;} },
   boomerang: { end: 3.4, steps: [[0.4, A, 'boomerang', B]] },
   thrust: { end: 2.6, steps: [[0.4, A, 'thrust', B]] },
   gravity: { end: 3.4, steps: [[0.4, A, 'gravity', v(2, 0.8)]] },
@@ -80,6 +81,7 @@ type DemoState = { w: World; script: Script; next: number; events: SimEvent[] };
 
 // Rótulos seguem os estados reais para a prévia não sugerir que stun, prisão e postura têm o mesmo bloqueio.
 export function demoStatus(w: World, z: Wizard): string[] {
+  if(w.t < (z.blindUntil ?? 0)) return [t('cegueira · visão3m','blindness · sight3m'), ...(w.t < (z.incapacitateUntil ?? 0) ? [t('incapacitado · recargas pausadas','incapacitated · cooldowns paused')] : [])];
   if (w.t < (z.closedBodyUntil ?? 0) && bracingActive(w,z)) return [t('Corpo fechado · dano/empurrão/status −90%', 'Closed Body · damage/knockback/status −90%')];
   if ((z.geyserLeft ?? 0) > 0) return [t('suspenso · invulnerável · sem ações', 'suspended · invulnerable · no actions')];
   const left = (until: number) => Math.max(0, until - w.t).toLocaleString(LOCALE, { maximumFractionDigits: 1 });
@@ -203,6 +205,11 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
     const k = (Math.min(cw, ch) / 13) * dpr; // pixels por metro: a arena de 6 m inteira no quadro
     ctx.setTransform(k, 0, 0, k, canvas.width / 2, canvas.height / 2);
     drawStone(ctx, w.arena, w.arenaR, 0.08);
+    if(id==='cluster') {
+      const a=w.wizards[A],l=spellLevel('cluster',1),dir=v(Math.cos(a.facing),Math.sin(a.facing)),pts=conePoints(a.pos,dir,l.range,l.width);
+      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); ctx.lineTo(pts[1].x,pts[1].y); ctx.lineTo(pts[2].x,pts[2].y); ctx.closePath();ctx.fillStyle='rgba(205,175,110,.25)';ctx.fill();ctx.strokeStyle='#cfb17b';ctx.stroke();
+      text(t('areia3m×2m · sem empurrão','sand3m×2m · no knockback'),v(0,-4.5),'#cfb17b',.3);
+    }
     if (id === 'lightning') text(spellName('lightning'), v(0, -4.8), '#cfe8ff', .4);
     for (const z of w.zones) circle(z.pos, z.r, ZONE_COLOR[z.kind]);
     for (const p of w.pillars) if (p.alive) circle(p.pos, OBSTACLES[p.kind].r, '#8a7a6a', '#d9c3a5');
@@ -302,6 +309,12 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
       else if (e.k === 'scourge' || e.k === 'clash') circle(v(e.x, e.y), e.r, null, e.k === 'clash' ? CLASH_COLOR[e.combo] : '#ff6a4d');
       else if (e.k === 'hit' && e.dmg > 0.5) text('−' + Math.round(e.dmg), v(e.x, e.y - 1.1 - (0.8 - life) * 0.8), '#fff2a0', 0.42);
       else if (e.k === 'death') text('✕', w.wizards.find((z) => z.id === e.id)?.pos ?? v(0, 0), '#ff6a4d', 0.6);
+    }
+    const blinded=id==='cluster'?w.wizards[B]:null;
+    if(blinded && w.t<(blinded.blindUntil??0)) {
+      const p=blinded.pos,g=ctx.createRadialGradient(p.x,p.y,BLINDNESS.radius-BLINDNESS.feather,p.x,p.y,BLINDNESS.radius);
+      g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'#000000');ctx.fillStyle=g;ctx.fillRect(-30,-30,60,60);
+      text(t('visão do alvo cegado · diâmetro6m','blinded target view · diameter6m'),v(0,-4.8),'#cfb17b',.3);
     }
   }
 

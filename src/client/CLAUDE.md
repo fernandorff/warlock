@@ -4,6 +4,8 @@ Vale junto com o `CLAUDE.md` da raiz.
 
 ## Interface
 
+- Cegueira: vinheta ancorada no chão pelo raio3m do jogador afetado, não pela câmera; oculta entidades e rótulos além do limite. Capítulo de status somente texto no Grimório; Rajada de areia tem ficha e demo próprias PT/EN em Controle.
+
 - Corpo fechado escurece materiais clonados e restaura ao terminar; sons próprios no começo/fim confirmados. Manter base usa brace_activation.mp3. Gravações fornecidas pelo usuário, declaradas CC0, respeitam mixer/distância.
 
 - Gêiser em Suporte: mira no chão como Agarrar; jato azul eleva o alvo e bloqueia previsão/comandos durante a suspensão. Ficha e demonstração PT/EN seguem os stats compartilhados.

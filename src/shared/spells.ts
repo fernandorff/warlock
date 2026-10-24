@@ -9,10 +9,10 @@ export const MAX_SPELLS = 8;
 
 // magias pelo efeito principal: a loja e a ajuda mostram os nomes (rules-text.ts); o sorteio das cartas do Ascensão usa os grupos
 export const SPELL_GROUP_IDS = {
-  attack: ['fireball', 'lightning', 'homing', 'meteor', 'cluster', 'boomerang', 'bouncer', 'recharge', 'splitter', 'snowball', 'scourge', 'pact'],
+  attack: ['fireball', 'lightning', 'homing', 'meteor', 'boomerang', 'bouncer', 'recharge', 'splitter', 'snowball', 'scourge', 'pact'],
   mobility: ['teleport', 'swap', 'rush', 'thrust', 'windwalk'],
   defense: ['shield', 'alteration', 'warpzone', 'rockpillar', 'illusion', 'closedbody'],
-  control: ['grip', 'gravity', 'link', 'magnetize', 'drain'],
+  control: ['grip', 'gravity', 'link', 'magnetize', 'drain', 'cluster'],
   support: ['heal', 'geyser'],
 } as const satisfies Record<string, readonly SpellId[]>;
 export type SpellGroup = keyof typeof SPELL_GROUP_IDS;
@@ -23,14 +23,14 @@ export const spellGroup = (s: SpellId) => (Object.keys(SPELL_GROUP_IDS) as Spell
 
 // radius: raio da explosão do Meteoro (e do dano da Gravidade); dmgMin: dano na borda dele; absorb: dano que a Investida converte em velocidade;
 // pull: puxão da Gravidade nos magos (m/s²); scale: tempo dos projéteis inimigos na Zona de dobra; dot: dano por segundo da Bola de neve encostada
-export type Level = { cd: number; dmg: number; heal: number; knock: number; speed: number; range: number; duration: number; radius: number; dmgMin: number; absorb: number; pull: number; scale: number; dot: number };
+export type Level = { cd: number; dmg: number; heal: number; blind: number; incapacitate: number; width: number; knock: number; speed: number; range: number; duration: number; radius: number; dmgMin: number; absorb: number; pull: number; scale: number; dot: number };
 type Spell = { name: string; en: string; cost: number; up: number[]; levels: Level[] };
 
 export const MAX_SPELL_LEVEL = 7;
 
 // os 7 níveis do original (npc_abilities_custom.txt e npc_items_custom.txt); dano na escala de vida 1000 (a do original), distâncias em metros (UNIT)
 // kbf = fator de empurrão da magia no original (o raio empurra 0,92 do normal)
-const L = ({ kbf = 1, ...l }: Partial<Level> & { kbf?: number }): Level => ({ cd: 0, dmg: 0, heal: 0, speed: 0, range: 0, duration: 0, radius: 0, dmgMin: 0, absorb: 0, pull: 0, scale: 0, dot: 0, ...l, knock: (l.dmg ?? 0) * KB_PER_DMG * kbf });
+const L = ({ kbf = 1, ...l }: Partial<Level> & { kbf?: number }): Level => ({ cd: 0, dmg: 0, heal: 0, blind: 0, incapacitate: 0, width: 0, speed: 0, range: 0, duration: 0, radius: 0, dmgMin: 0, absorb: 0, pull: 0, scale: 0, dot: 0, ...l, knock: (l.dmg ?? 0) * KB_PER_DMG * kbf });
 const zip = (a: number[], b: number[]) => a.map((x, i) => [x, b[i]]);
 const steps = (from: number, by: number) => Array.from({ length: MAX_SPELL_LEVEL }, (_, i) => Math.round((from + by * i) * 100) / 100);
 
@@ -50,8 +50,8 @@ export const SPELLS: Record<SpellId, Spell> = {
   meteor: { name: 'Meteoro', en: 'Meteor', cost: 14, up: [6, 7, 8, 9, 10, 11], levels: zip([20, 19.5, 19, 18.5, 18, 17.5, 17], [110, 120, 130, 140, 150, 160, 170]).map(([cd, d], i) => L({ cd: cd * 0.9, dmg: d, dmgMin: 60, kbf: 0, duration: 1.25, /* ciclo 1: recarga ×0,9 (0,94×) */ /* borda 40 → 60 em 17/10 */ radius: [225, 240, 255, 269, 282, 294, 304][i] * UNIT, range: 1000 * UNIT })) },
   // investida: absorve até `absorb` de dano (metade de cada golpe) e vira velocidade
   rush: { name: 'Investida', en: 'Rush', cost: 12, up: [6, 7, 8, 9, 10, 11], levels: zip([21, 20, 19, 18, 17, 16, 15], [6, 6.5, 7, 7.5, 8, 8.5, 9]).map(([cd, duration], i) => L({ cd: cd * 1.2, duration, absorb: (50 + 20 * i) * 0.25 })) }, // 18/10: absorve ¼ e recarga ×1,2; avanço 40 → 20 (1,36 → 1,13)
-  // rajada: 4 projéteis em leque de 844 u/s e 672 u de alcance; empurrão 0,65
-  cluster: { name: 'Rajada', en: 'Cluster', cost: 14, up: [6, 7, 8, 9, 10, 11], levels: zip([15.5, 14.75, 14, 13.25, 12.5, 11.75, 11], [33, 36, 39, 42, 45, 48, 51]).map(([cd, d]) => L({ cd, dmg: d, kbf: 0.65, speed: 844 * UNIT, range: 672 * UNIT })) },
+  // Cone de areia substitui os quatro projéteis; custo e recarga anteriores preservados.
+  cluster: { name: 'Rajada de areia', en: 'Sand Blast', cost: 14, up: [6, 7, 8, 9, 10, 11], levels: steps(15.5, -.75).map((cd, i) => L({ cd, dmg: 20 + 8 * i, kbf: 0, range: 3, width: 2, incapacitate: 1 + .25 * i, blind: 2 + .5 * i })) },
   // as cinco do Warlock Brawl de 17/10 (decisão do Fernando): npc_abilities_custom.txt, base/shop.lua, spells/, projectiles/ e modifiers/
   // bumerangue: curva até o ponto (300 a 800 u) e volta ao dono; empurrão 0,95
   boomerang: { name: 'Bumerangue', en: 'Boomerang', cost: 11, up: [7, 8, 9, 10, 11, 12], levels: zip([16, 13.9, 12.5, 11.7, 11, 10.3, 9.6], [70, 76, 82, 88, 94, 100, 106]).map(([cd, d]) => L({ cd, dmg: d, kbf: 0.95, speed: 1500 * UNIT, range: 800 * UNIT })) },
@@ -110,6 +110,7 @@ export const METEOR_DELAY = 1.15;
 // avanço: 3 m em 0,2 s na direção do mouse (não existe no original; pedido do Fernando, 17/10: o avanço não funcionava)
 export const RUSH = { bonus: 35 * UNIT, perHp: 1.5 * UNIT, share: 0.5, dash: 3, dashTime: 0.2, dashDmg: 20 }; // ciclo 1 (18/10): dano do avanço 60 → 40 (Investida 1,30×) // dashDmg: dano em quem o avanço encostar (pedido do Fernando, 17/10)
 // rajada: ângulos do leque em radianos (cluster.lua)
+export const BLINDNESS = { radius: 3, feather: .6 }; // diâmetro6m no mundo, independente do zoom.
 export const CLUSTER_FAN = [-0.18, -0.06, 0.06, 0.18];
 
 export const HOMING_TURN = 2.5; // rad/s

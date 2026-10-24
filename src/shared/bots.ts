@@ -175,6 +175,7 @@ export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = 
   const me = w.wizards.find((z) => z.id === id && z.alive);
   if (!me) return [];
   if ((me.geyserLeft ?? 0) > 0) return [];
+  const vision = w.t < (me.blindUntil ?? 0) ? 3 : D.vision;
   const M = mind(w);
   if (w.t < (M.frozen.get(id) ?? -1)) return []; // parado por erro
   const cmds: Cmd[] = [];
@@ -224,7 +225,7 @@ export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = 
   }
 
   // projétil que acabou de surgir ainda não deu tempo de ver; longe demais, o bot não enxerga
-  const seen = (p: Projectile) => w.t - (p.born ?? -Infinity) >= D.delay && dist(p.pos, me.pos) <= D.vision;
+  const seen = (p: Projectile) => w.t - (p.born ?? -Infinity) >= D.delay && dist(p.pos, me.pos) <= vision;
   const th = threatTo(w, me, seen);
   const threat = th?.p ?? null;
   const tHit = th?.t ?? Infinity;
@@ -264,9 +265,9 @@ export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = 
   // a cópia parece o dono (mesma vida e efeitos): o bot não sabe qual é a falsa e fica com a mais perto
   const decoys = w.projectiles.flatMap((p) => {
     const o = p.kind === 'illusion' && p.until > w.t ? w.wizards.find((z) => z.id === p.owner && z.alive && !ally(z)) : undefined;
-    return o && dist(p.pos, me.pos) <= D.vision ? [{ ...o, id: decoyId(p), pos: p.pos, vel: v(0, 0) }] : [];
+    return o && dist(p.pos, me.pos) <= vision ? [{ ...o, id: decoyId(p), pos: p.pos, vel: v(0, 0) }] : [];
   });
-  const foes = [...w.wizards.filter((z) => z.alive && !ally(z) && w.t >= z.windUntil && w.t >= z.veilUntil && dist(z.pos, me.pos) <= D.vision), ...decoys];
+  const foes = [...w.wizards.filter((z) => z.alive && !ally(z) && w.t >= z.windUntil && w.t >= z.veilUntil && dist(z.pos, me.pos) <= vision), ...decoys];
   const nearest = (zs: Wizard[]) => zs.reduce<Wizard | null>((a, z) => (!a || dist(z.pos, me.pos) < dist(a.pos, me.pos) ? z : a), null);
   // o Difícil caça: quem está fraco, perto da lava ou na frente do placar (a até 8 m); senão, o mais perto
   const top = Math.max(0, ...Object.values(scores));

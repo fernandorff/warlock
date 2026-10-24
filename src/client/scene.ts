@@ -6,6 +6,8 @@ import { createBraceClip } from './brace-pose.ts';
 import { createAttackClip } from './attack-pose.ts';
 import { electroPulse } from './screen-data.ts';
 import { HEAL_FX, healAura } from './heal-fx.ts';
+import { blindnessMask } from './blindness-fx.ts';
+import { conePoints } from '../shared/sand-cone.ts';
 import { GEYSER_FX, geyserHeight } from './geyser-fx.ts';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -25,7 +27,7 @@ import { add, clampLen, len, scale, sub, v, type Vec } from '../shared/vec.ts';
 import { createDecor } from './decor.ts';
 import { t } from './i18n.ts';
 import { BAD_STATUS, ICON, ITEM_ICON, RUNE_ICON, STATUS_ICONS, UI_ICON, el, fxClock, icon } from './icons.ts';
-import { LIGHTNING, SPELLS } from '../shared/spells.ts';
+import { BLINDNESS, LIGHTNING, SPELLS } from '../shared/spells.ts';
 import type { TAUNTS } from '../shared/taunts.ts';
 
 // cor de cada lugar (0..7) e o giro de matiz que leva o roxo do mago até ela
@@ -926,7 +928,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
   const CAST_ANIM: Record<string, [string, number, number?]> = {
     closedbody: ['Block', 0.6], shield: ['Block', 0.6], rush: ['Dodge_Forward', 0.4], teleport: ['Dodge_Forward', 0.4], windwalk: ['Dodge_Backward', 0.4], grip: ['Throw', 0.6, 0.45],
     meteor: SUMMON, rockpillar: SUMMON, warpzone: SUMMON, drain: ['Spellcast_Long', 0.9, 0.3], thrust: ['Unarmed_Melee_Attack_Kick', 0.5, 0.2],
-    gravity: SPIN, cluster: SPIN,
+    gravity: SPIN, cluster: ['Throw', .5, .1],
     // Flagelo: o giro mais forte vai de ~0,6 a ~0,9 s do clip; começando em 0,15 ele cai junto com a explosão (preparo de 0,5 s)
     scourge: ['2H_Melee_Attack_Spin', 0.85, 0.15],
     // issue #207: o que é jogado sai de arremesso, do mesmo ponto do clip que o Agarrar (a soltura cai no preparo de 0,1 s);
@@ -1549,6 +1551,14 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
 
   function onEvents(events: SimEvent[], hiddenDamageTargets: readonly string[] = []) {
     for (const e of events) {
+      if (e.k === 'sand') {
+        const from=v(e.x,e.y),dir=v(e.dx,e.dy),pts=conePoints(from,dir,e.length,e.width);
+        const geo=new THREE.BufferGeometry().setFromPoints(pts.map(p=>w3(p,.12)));
+        const mat=new THREE.MeshBasicMaterial({color:'#c9ab70',transparent:true,opacity:.5,side:THREE.DoubleSide,depthWrite:false});
+        const fan=new THREE.Mesh(geo,mat); scene.add(fan);
+        addFx(fan,.5,k=>{ mat.opacity=.5*(1-k); });
+        for(let i=0;i<(lite?12:35);i++) { const d=Math.random()*e.length,side=(Math.random()-.5)*e.width*d/e.length; burst(v(e.x+dir.x*d-dir.y*side,e.y+dir.y*d+dir.x*side),'#d7bc85',.4,.4,.2+Math.random()*.6,FX.spark); }
+      }
       if (e.k === 'cast') {
         oneShot(e.id, ...castAnim(e.spell));
         if (e.spell === 'scourge') {
@@ -2067,6 +2077,11 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
   const bandBody = new THREE.PlaneGeometry(1, 1).translate(0.5, 0, 0).rotateX(-Math.PI / 2);
   const bandCap = new THREE.CircleGeometry(1, 24, -Math.PI / 2, Math.PI).rotateX(-Math.PI / 2);
   const bands: THREE.Group[] = [];
+  const coneGeo = new THREE.BufferGeometry();
+  coneGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9),3));
+  const coneAim = new THREE.Mesh(coneGeo,new THREE.MeshBasicMaterial({color:'#d5b474',transparent:true,opacity:.25,side:THREE.DoubleSide,depthWrite:false}));
+  coneAim.visible=false; coneAim.renderOrder=9; scene.add(coneAim);
+  const blindMask = blindnessMask(camera); scene.add(blindMask);
 
   return {
     ready,
@@ -2101,6 +2116,10 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       });
     },
     // trechos de faixa [de, até] com meia largura `half`; lista vazia esconde
+    cone(points: [Vec,Vec,Vec] | null) {
+      coneAim.visible=!!points;
+      if(points) { const a=coneGeo.getAttribute('position'); points.forEach((p,i)=>a.setXYZ(i,p.x,.04,p.y)); a.needsUpdate=true; coneGeo.computeBoundingSphere(); }
+    },
     bands(segs: [Vec, Vec][], half: number) {
       for (let i = bands.length; i < segs.length; i++) {
         const g = new THREE.Group();
@@ -2224,7 +2243,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       const m = mages.get(id);
       if (!m || m.dead) return;
       // brilho na mão (um pouco à frente do mago, na cor da magia) e linha de mira fraca até o ponto
-      const color = spell === 'heal' ? HEAL_FX.color : LOOK[spell as keyof typeof LOOK]?.halo ?? '#ffb347';
+      const color = spell === 'cluster' ? '#d7bc85' : spell === 'heal' ? HEAL_FX.color : LOOK[spell as keyof typeof LOOK]?.halo ?? '#ffb347';
       const from = v(m.root.position.x, m.root.position.z);
       const dir = at ? Math.atan2(at.y - from.y, at.x - from.x) : Math.PI / 2 - m.root.rotation.y;
       const hand = v(from.x + Math.cos(dir) * 0.45, from.y + Math.sin(dir) * 0.45);
@@ -2234,10 +2253,12 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([w3(hand, 0.9), w3(at, 0.1)]), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
       addFx(line, 0.35, (k) => ((line.material as THREE.LineBasicMaterial).opacity = 0.35 * (1 - k)));
     },
-    render(state: { arena: ArenaId; arenaR: number; shrinkIn: number; wizards: WizDraw[]; projectiles: ProjView[]; pillars: PillarView[]; loots: { pos: Vec; left: number }[]; runes: RuneView[]; zones?: ZoneView[]; isles?: Isle[]; follow: Vec | null; lock?: boolean; effect?: RoundEffectId | null; arcane?: boolean }) {
+    render(state: { blindAt?: Vec | null; arena: ArenaId; arenaR: number; shrinkIn: number; wizards: WizDraw[]; projectiles: ProjView[]; pillars: PillarView[]; loots: { pos: Vec; left: number }[]; runes: RuneView[]; zones?: ZoneView[]; isles?: Isle[]; follow: Vec | null; lock?: boolean; effect?: RoundEffectId | null; arcane?: boolean }) {
       const now = performance.now() / 1000;
       const dt = Math.min(0.05, now - lastFrame);
       lastFrame = now;
+      blindMask.visible=!!state.blindAt;
+      if(state.blindAt) blindMask.material.uniforms.center.value.set(state.blindAt.x,state.blindAt.y);
       lavaMat.uniforms.uTime.value = now;
 
       // arena nova (sorteada a cada rodada): troca o chão e a borda
@@ -2497,6 +2518,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
         const q = p.project(camera);
         return [(q.x * innerWidth) / 2 + innerWidth / 2, (-q.y * innerHeight) / 2 + innerHeight / 2];
       };
+      const obscured = (p: THREE.Vector3) => !!state.blindAt && Math.hypot(p.x-state.blindAt.x,p.z-state.blindAt.y)>BLINDNESS.radius;
       // números de dano: sobem 1,2 m em 0,9 s e somem
       for (let i = numbers.length - 1; i >= 0; i--) {
         const d = numbers[i];
@@ -2509,11 +2531,13 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
         const [x, y] = toScreen(d.at.clone().setY(d.at.y + k * 1.2));
         d.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${1 + (d.pop ?? 0.3) * Math.max(0, 0.2 - k) * 5})`;
         d.el.style.opacity = String(Math.min(1, (1 - k) * 2.5));
+        d.el.style.visibility = obscured(d.at) ? 'hidden' : '';
       }
 
       // barras dos obstáculos, logo acima de cada um
       for (const p of pillarMeshes) {
         if (!p.bar || p.bar.hidden) continue;
+        p.bar.style.visibility = obscured(p.obj.position) ? 'hidden' : '';
         const [x, y] = toScreen(p.obj.position.clone().setY(p.height + 0.15));
         p.bar.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
       }
@@ -2521,6 +2545,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       // nome e vida em cima de cada mago
       for (const m of mages.values()) {
         if (m.label.hidden) continue;
+        m.label.style.visibility = obscured(m.root.position) ? 'hidden' : '';
         const [x, y] = toScreen(m.root.position.clone().setY(2.1 + m.model.position.y));
         m.label.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
       }

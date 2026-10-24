@@ -91,7 +91,7 @@ export type PublicRoom = {
 // kr: recuperação pós-empurrão restante, por mago; ausente em servidores antigos significa zero.
 // st: duração restante do atordoamento por mago; -1 usa o comportamento antigo baseado na velocidade física.
 // ba: dois números por mago: preparo de Atacar restante em segundos e corpo a corpo (1/0); ausente = sem preparo.
-export type Snap = { t: 'snap'; time: number; r: number; s: number; w: number[]; p: number[]; cd: number[]; sp: number; pl: number[]; cb?: number[]; gy?: number[]; ba?: number[]; kr?: number[]; st?: number[]; rs?: number[]; ch?: number[]; lp?: number[]; ru?: number[]; ab?: number[]; zn?: number[]; il?: number[]; fx?: number[]; ack: number; e?: SimEvent[] };
+export type Snap = { t: 'snap'; time: number; r: number; s: number; w: number[]; p: number[]; cd: number[]; sp: number; pl: number[]; bl?: number[]; cb?: number[]; gy?: number[]; ba?: number[]; kr?: number[]; st?: number[]; rs?: number[]; ch?: number[]; lp?: number[]; ru?: number[]; ab?: number[]; zn?: number[]; il?: number[]; fx?: number[]; ack: number; e?: SimEvent[] };
 
 // lista de salas do lobby; mode, round e bots entraram depois: salas gravadas antes não têm (o cliente aceita sem)
 export type RoomInfo = { id: string; players: number; phase: string; mode?: string; round?: number; bots?: number };

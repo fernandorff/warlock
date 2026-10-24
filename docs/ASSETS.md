@@ -7,6 +7,8 @@
 
 ## Identidade visual
 
+- Rajada de areia/Cegueira24/10: partículas e cone3D/mira gerados em scene.ts; vinheta de raio3m via shader próprio blindness-fx.ts. Som de areia por ruído filtrado sintetizado em sound.ts. Sem imagens/gravações externas novas; referência visual do usuário usada apenas como direção.
+
 - **Tema:** fantasia sombria de pedra escura, lava e ouro. As cores estão todas nas variáveis do `:root` em [`src/client/style.css`](../src/client/style.css): fundo `--bg #140806`, painéis `--panel`/`--panel2`, lava `--lava #ff6a1a`, brasa `--ember #ffb347`, ouro `--gold #ffd666`, texto `--fg #f7ecdf`. Cor solta no código não entra (regra do `CLAUDE.md`).
 - **Cor por grupo de magia:** Ataque `#ff6b4a`, Mobilidade amarelo `--gold #ffd666`, Defesa `#5fb0ff`, Controle `#c58bff`, Suporte `#8be36a`, Itens prateado `--item #c9d4e0`.
 - **Painéis:** metal envelhecido com borda dourada fina e rebites nos cantos (`--plate`, `--plate-edge`, `--frame`).

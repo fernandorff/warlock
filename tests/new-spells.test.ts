@@ -51,8 +51,8 @@ describe('escudo contra as magias novas', () => {
     expect(w.projectiles).toHaveLength(0);
   });
 
-  it('reflects Rajada back at the caster without crediting a hit', () => {
-    const w = world([[0, 0], [4, 0]], ['cluster']);
+  it('Escudo reduz novos status da areia sem refletir cone', () => {
+    const w = world([[0, 0], [2.5, 0]], ['cluster']);
     w.wizards[1].shieldUntil = 99;
     let landed = false, reflected = false;
     stepWorld(w, [cast('p0', 'cluster', 4, 0)]);
@@ -61,9 +61,9 @@ describe('escudo contra as magias novas', () => {
       landed ||= w.events.some((e) => e.k === 'land');
       reflected ||= w.events.some((e) => e.k === 'reflect');
     }
-    expect(reflected).toBe(true); // os refletidos podem se anular com o restante da rajada agora.
+    expect(reflected).toBe(false);
     expect(w.wizards[1].hp).toBe(HP_MAX);
-    expect(landed).toBe(false);
+    expect(landed).toBe(true);
   });
 });
 
@@ -179,18 +179,17 @@ describe('Investida', () => {
 });
 
 describe('Rajada', () => {
-  it('spawns 4 projectiles in a fan and each can land', () => {
+  it('aplica cone uma vez sem criar projéteis nem empurrar', () => {
     const w = world([[0, 0], [3, 0]], ['cluster']);
     run(w, 0.15, [cast('p0', 'cluster', 3, 0)]);
-    expect(w.projectiles.filter((p) => p.kind === 'cluster')).toHaveLength(4);
-    const dirs = new Set(w.projectiles.map((p) => Math.round(Math.atan2(p.vel.y, p.vel.x) * 100)));
-    expect(dirs.size).toBe(4);
+    expect(w.projectiles.filter((p) => p.kind === 'cluster')).toHaveLength(0);
+    expect(w.wizards[1].blindUntil).toBeGreaterThan(w.t);
     run(w, 1);
     expect(w.wizards[1].hp).toBeLessThan(HP_MAX);
     expect(w.wizards[1].hp).toBeGreaterThan(HP_MAX - 4 * spellLevel('cluster', 1).dmg - 10);
   });
 
-  it('colide com bolas de fogo inimigas', () => {
+  it('não destrói projéteis em voo', () => {
     const w = world([[0, 0], [8, 0]], ['cluster', 'fireball']);
     let clashed = false;
     stepWorld(w, [cast('p0', 'cluster', 8, 0), cast('p1', 'fireball', 0, 0)]);
@@ -198,7 +197,7 @@ describe('Rajada', () => {
       stepWorld(w, []);
       clashed ||= w.events.some((e) => e.k === 'clash');
     }
-    expect(clashed).toBe(true);
+    expect(clashed).toBe(false);
   });
 });
 
@@ -279,7 +278,8 @@ describe('bots com as magias novas', () => {
 
   it('cast meteor and cluster at the nearest enemy', () => {
     expect(botCmds(duel({ meteor: 1 }), 'bot', () => 0.3).some((c) => c.kind === 'cast' && c.spell === 'meteor')).toBe(true);
-    expect(botCmds(duel({ cluster: 1 }), 'bot', () => 0.3).some((c) => c.kind === 'cast' && c.spell === 'cluster')).toBe(true);
+    const w=duel({cluster:1}); w.wizards[1].pos=v(2.5,0);
+    expect(botCmds(w,'bot',()=>.3).some(c=>c.kind==='cast'&&c.spell==='cluster')).toBe(true);
   });
 });
 

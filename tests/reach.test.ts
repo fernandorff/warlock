@@ -72,10 +72,10 @@ describe('largura do acerto e explosão na mira (pedido do Fernando, 21/10)', ()
     for (const s of ['magnetize', 'bouncer', 'recharge', 'link', 'swap'] as const) expect(aimOf(s, all, noItems(), from, at).half).toBeCloseTo(PROJ_R);
   });
 
-  it('Rajada: uma faixa por projétil do leque', () => {
+  it('Rajada de areia: triângulo único3×2 sem faixas de projétil', () => {
     const c = aimOf('cluster', all, noItems(), from, at);
-    expect(c.segs).toHaveLength(CLUSTER_FAN.length);
-    c.segs.forEach(([, e], i) => expect(Math.atan2(e.y, e.x)).toBeCloseTo(CLUSTER_FAN[i]));
+    expect(c.segs).toHaveLength(0);
+    expect(c.cone).toEqual([from,v(3,1),v(3,-1)]);
   });
 
   it('Bola de neve explode no fim do voo; Gravidade queima em volta do caminho e no fim; Meteoro no ponto mirado', () => {

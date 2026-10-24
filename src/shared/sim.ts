@@ -5,7 +5,8 @@ import {
 } from './constants.ts';
 import { SHAPES, edge, inArena, inLavaAt, inward, isleSpot, onIsle, safeInside, type ArenaId, type Isle } from './arena.ts';
 import { AEGIS, SHOCK_BOOTS, WIND_BOOTS, itemStats, noItems, type ItemId } from './items.ts';
-import { BOOMERANG, BOUNCER, CAST_POINT, CLOSED_BODY, CLUSTER_FAN, DRAIN, GRAVITY, GRIP, HOMING_TURN, LIGHTNING, LINK, MAGNETIZE, METEOR_DELAY, PACT, PROJECTILE_COLLISION, RECHARGE, RUSH, SNOWBALL, SPELL_IDS, SPLITTER, THRUST, WARPZONE, WINDWALK, spellLevel, type Level, type SpellId } from './spells.ts';
+import { BOOMERANG, BOUNCER, CAST_POINT, CLOSED_BODY, DRAIN, GRAVITY, GRIP, HOMING_TURN, LIGHTNING, LINK, MAGNETIZE, METEOR_DELAY, PACT, PROJECTILE_COLLISION, RECHARGE, RUSH, SNOWBALL, SPELL_IDS, SPLITTER, THRUST, WARPZONE, WINDWALK, spellLevel, type Level, type SpellId } from './spells.ts';
+import { inCone } from './sand-cone.ts';
 import { add, clampLen, dist, dot, len, norm, scale, sub, v, type Vec } from './vec.ts';
 import { KNOCK_RECOVERY } from './constants.ts';
 import { SHIELD, castBlocked } from './spells.ts';
@@ -23,6 +24,8 @@ export type Wizard = {
   braceReadyAt?: number; // efeitos só entram depois do preparo contínuo de0,5s.
   electroUntil?: number; // lentidão elétrica e Incapacitar, sem bloquear habilidades já prontas.
   stunLeft?: number; // bloqueio de ações separado da força física, para resistência reduzir só a duração.
+  blindUntil?: number;
+  incapacitateUntil?: number;
   closedBodyUntil?: number;
   geyserLeft?: number;
   geyserAt?: Vec; // âncora horizontal: forças externas não deslocam quem está sustentado.
@@ -142,6 +145,7 @@ export type Cmd =
   | { id: string; kind: 'cast'; spell: SpellId; at: Vec }
 
 export type SimEvent =
+  | { k: 'sand'; id: string; x: number; y: number; dx: number; dy: number; length: number; width: number }
   | { k: 'heal'; id: string; x: number; y: number; amount: number }
   | { k: 'attack'; id: string; melee: boolean }
   | { k: 'cast'; id: string; spell: SpellId }
@@ -165,7 +169,7 @@ export type SimEvent =
   | { k: 'pillar'; i: number; x: number; y: number }
   | { k: 'chest'; x: number; y: number } // baú apareceu
   | { k: 'loot'; id: string; x: number; y: number } // alguém ganhou 1 de ouro em cima do monte
-  // estatística de precisão: 'fire' quando uma magia de dano sai, 'land' quando ela acerta um inimigo (uma vez por projétil; a Rajada conta os 4)
+  // estatística de precisão: 'fire' ao lançar dano; 'land' uma vez por cone/projétil acertado
   | { k: 'fire'; id: string; src: SpellId }
   | { k: 'land'; id: string; src: SpellId };
 
@@ -404,7 +408,7 @@ export const statusDuration = (w: World, wz: Wizard, seconds: number) => seconds
 export const closedBodyActive = (w: World, wz: Wizard) => w.t < (wz.closedBodyUntil ?? 0) && bracingActive(w, wz);
 export const damageFactor = (w: World, wz: Wizard) => closedBodyActive(w, wz) ? CLOSED_BODY.damage : 1;
 export const bracingActive = (w: World, wz: Wizard) => w.t + 1e-8 >= (wz.braceReadyAt ?? Infinity) && w.t < (wz.braceUntil ?? 0);
-export const incapacitatedUntil = (wz: Wizard, now = Infinity) => Math.max(wz.electroUntil ?? 0, now + 1e-8 >= (wz.braceReadyAt ?? Infinity) ? wz.braceUntil ?? 0 : 0);
+export const incapacitatedUntil = (wz: Wizard, now = Infinity) => Math.max(wz.incapacitateUntil ?? 0, wz.electroUntil ?? 0, now + 1e-8 >= (wz.braceReadyAt ?? Infinity) ? wz.braceUntil ?? 0 : 0);
 export function applyElectrocution(w: World, wz: Wizard) {
   if (w.t < wz.invulnUntil) return;
   wz.electroUntil = Math.max(wz.electroUntil ?? 0, w.t + statusDuration(w, wz, LIGHTNING.debuffDuration * wz.debuffMult));
@@ -683,7 +687,7 @@ function slowDown(w: World, wz: Wizard, amount: number, secs: number) {
 }
 
 // quantos 'fire' cada lançamento conta (a Rajada sai com 4 e o Divisor com 8 filhotes); as outras, 1
-const SHOTS: Partial<Record<SpellId, number>> = { cluster: CLUSTER_FAN.length, splitter: 2 * SPLITTER.waves };
+const SHOTS: Partial<Record<SpellId, number>> = { splitter: 2 * SPLITTER.waves };
 
 function geyserLift(w: World, p: Projectile) {
   const L = spellLevel('geyser', p.level);
@@ -743,8 +747,17 @@ function cast(w: World, wz: Wizard, spell: SpellId, at: Vec) {
     const homing = spell === 'homing';
     launch(spell, dir, homing ? L.duration * wz.rangeF : flight, homing ? (nearestEnemy(w, at, wz.id)?.id ?? null) : null);
   } else if (spell === 'cluster') {
-    const base = Math.atan2(dir.y, dir.x);
-    for (const off of CLUSTER_FAN) launch('cluster', v(Math.cos(base + off), Math.sin(base + off)), flight);
+    const length = L.range * wz.rangeF, width = L.width * wz.rangeF;
+    w.events.push({ k: 'sand', id: wz.id, x: wz.pos.x, y: wz.pos.y, dx: dir.x, dy: dir.y, length, width });
+    let landed = false;
+    for (const z of w.wizards) {
+      if (!z.alive || z === wz || allies(wz,z) || isSuspended(z) || w.t < z.invulnUntil || !inCone(wz.pos,dir,length,width,z.pos,WIZ_R) || firstPillarOnSegment(w,wz.pos,z.pos,0)) continue;
+      hit(w,z,wz.id,L.dmg*dmgMult,0,dir,'cluster');
+      z.incapacitateUntil = Math.max(z.incapacitateUntil ?? 0,w.t+statusDuration(w,z,L.incapacitate*z.debuffMult));
+      z.blindUntil = Math.max(z.blindUntil ?? 0,w.t+statusDuration(w,z,L.blind*z.debuffMult));
+      landed = true;
+    }
+    if (landed) w.events.push({k:'land',id:wz.id,src:'cluster'});
   } else if (spell === 'grip') {
     const to = add(wz.pos, clampLen(sub(at, wz.pos), L.range * wz.rangeF));
     w.projectiles.push({ id: w.nextId++, born: w.t, kind: 'grip', owner: wz.id, pos: to, vel: v(0, 0), level, until: w.t + GRIP.delay, target: null, dmgMult, caster: wz.id });
@@ -1694,7 +1707,7 @@ function respawn(w: World, wz: Wizard, rand: () => number) {
   }
   Object.assign(wz, {
     alive: true, pos: best, vel: v(0, 0), target: null, casting: null, moveHeld: false, blockedMove: false, recoveryLeft: 0, stunLeft: undefined, hp: wz.hpMax, dmgTaken: 0, lastHitBy: null,
-    closedBodyUntil: 0, geyserLeft: 0, geyserAt: undefined,
+    blindUntil: 0, incapacitateUntil: 0, closedBodyUntil: 0, geyserLeft: 0, geyserAt: undefined,
     shieldUntil: 0, pactUntil: 0, dashUntil: 0, thrustUntil: 0, invulnUntil: w.t + INVULN_TIME,
     slowUntil: 0, hasteUntil: 0, snow: null, magnetUntil: 0, alterUntil: 0, windUntil: 0, veilUntil: 0, shockUntil: 0, aegis: wz.items.aegis > 0,
     rune: null, runeUntil: 0, braceUntil: 0, braceReadyAt: 0, electroUntil: 0, basicCasting: undefined,
