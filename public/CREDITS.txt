@@ -199,3 +199,6 @@ Gravações de provocações de Leonard (lboesmans), 21/10/2026 (PR #243, aceita
   não serem extrações de músicas/jogos/vídeos de terceiros, e autorizou envio,
   uso e redistribuição neste repositório público e no jogo Warlock.
   Permissão expressa do autor para o projeto; não presumir CC0 nem licença de terceiros.
+
+Manter base: public/sfx/brace_start.mp3, gravação enviada por Leonard (lboesmans), declarada CC0 por ele.
+  Origem do áudio: a confirmar pelo autor no PR #293.

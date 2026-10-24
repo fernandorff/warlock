@@ -1,6 +1,6 @@
 // Previsão do próprio mago: anda na hora do clique com o mesmo código do servidor e é corrigido de leve.
 import type { Terrain } from '../shared/arena.ts';
-import { WIZ_SPEED } from '../shared/constants.ts';
+import { BRACING_BIT, WIZ_SPEED } from '../shared/constants.ts';
 import { terrainOf, type NightMap } from '../shared/levels.ts';
 import { isStunned, keepOut, moveWizard, type MovementState, type Room } from '../shared/sim.ts';
 import { BLOCKED_MOVE_BIT, DASHING_BIT, type WizView } from '../shared/snapshot.ts';
@@ -14,6 +14,7 @@ export function createPredict() {
   let rttSec = 0.1;
   // conjurando: o mago fica parado até holdUntil; o clique de andar nesse meio-tempo fica guardado
   let holdUntil = 0;
+  let attackHold = false;
   let dead = false;
   let queued: Vec | null | undefined;
   const now = () => performance.now() / 1000;
@@ -41,23 +42,28 @@ export function createPredict() {
       holdUntil = 0;
       queued = undefined;
       dead = false;
+      attackHold = false;
     },
     // velocidade de andar que o servidor diz que o mago tem agora (botas, Investida, preso)
     setSpeed(sp: number) {
       if (me && sp >= 0) me.speed = sp;
     },
-    hold(secs: number) {
+    hold(secs: number, interruptible = false) {
+      if (attackHold) { holdUntil = 0; queued = undefined; }
+      attackHold = interruptible;
       if (secs <= 0) return;
       holdUntil = now() + secs;
       queued = undefined;
       if (me) me.target = null;
     },
     move(to: Vec) {
+      if (attackHold) { holdUntil = 0; queued = undefined; attackHold = false; }
       if (now() < holdUntil) queued = to;
       else if (me) me.target = to;
     },
     // o S também cancela a magia em lançamento (como no servidor): pode andar de novo na hora
     stop() {
+      attackHold = false;
       holdUntil = 0;
       queued = undefined;
       if (me) me.target = null;
@@ -110,6 +116,7 @@ export function createPredict() {
         queued = undefined;
       }
       if (server.status & 128) me.target = null; // preso (Agarrar): não anda
+      if (server.status & BRACING_BIT) { me.target = null; queued = undefined; }
       moveWizard(me, dt);
       if (terrain) keepOut(terrain, me, lock);
       const slack = WIZ_SPEED * (rttSec / 2) + 0.3;

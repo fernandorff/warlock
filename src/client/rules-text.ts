@@ -8,6 +8,12 @@ import { ITEMS, MAX_ITEMS, type ItemId } from '../shared/items.ts';
 import { keyLabel, keyOf, padButtonName, padButtonOf, uiLabel, type PadAction, type UiAction } from './keys.ts';
 import { BOUNCER, CAST_POINT, GRAVITY, GRIP, MAX_SPELLS, MAX_SPELL_LEVEL, METEOR_DELAY, PACT, RECHARGE, RUSH, SPELLS, SPELL_GROUP_IDS, SPELL_IDS, WARPZONE, type SpellId } from '../shared/spells.ts';
 import { LANG, LOCALE, spellName, t } from './i18n.ts';
+import { BASIC_ATTACK } from '../shared/constants.ts';
+
+export const ATTACK_TEXT = t(
+  `Atacar: aperte a tecla do ataque (A por padrão) e clique com o esquerdo num inimigo; no chão, escolhe o inimigo visível mais próximo de você dentro de ${BASIC_ATTACK.range} m. Até ${BASIC_ATTACK.melee.toLocaleString(LOCALE)} m usa corpo a corpo; mais longe, projétil direcionado. Preparo de ${BASIC_ATTACK.windup.toLocaleString(LOCALE)} s: S, movimento, conjuração ou stun cancelam antes do golpe, sem gastar recarga. Cada golpe exige nova ordem; não persegue nem repete sozinho. Causa ${BASIC_ATTACK.dmg} de dano e empurrão leve; o projétil não destrói magias.`,
+  `Attack: press the attack key (A by default), then left-click an enemy; on the ground, selects the visible enemy closest to you within ${BASIC_ATTACK.range} m. Within ${BASIC_ATTACK.melee} m uses melee; farther away, a targeted projectile. A ${BASIC_ATTACK.windup} s windup: S, movement, casting or stun cancel before release without spending the cooldown. Each hit requires a new order; no automatic chasing or repeating. Deals ${BASIC_ATTACK.dmg} damage and light knockback; the projectile does not destroy spells.`
+);
 
 // formatação dos números nos textos (também usada pela loja, ficha, dicas e opções)
 export const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -42,10 +48,11 @@ const RULES_PT = {
     const k = (a: UiAction) => uiLabel(a);
     const sheet = keyOf('sheet') === 'Backquote' ? "Tecla à esquerda do 1 (' no teclado brasileiro)" : k('sheet');
     return [
-      `Botão direito no chão: andar (segure para arrastar o destino). ${k('stop')}: parar (durante o lançamento, cancela a magia sem gastar a recarga). Esc: cancela a magia escolhida, fecha o que estiver aberto e, sem nada aberto, abre as configurações.`,
+      `Botão direito no chão: andar (segure para arrastar o destino). ${k('stop')}: parar (durante o lançamento, cancela a magia sem gastar a recarga). Segurar por 0,5 s ativa Manter base: reduz empurrão em 15%, mas pausa suas recargas (Incapacitar); habilidades prontas continuam disponíveis. Enquanto ativo, não caminha nem guarda cliques de movimento: solte a tecla e dê nova ordem para andar. Empurrões externos continuam. Pose e estrondo curto avisam a ativação; soltar antes cancela. Esc: cancela a magia escolhida, fecha o que estiver aberto e, sem nada aberto, abre as configurações.`,
       'Tecla da magia: três jeitos de lançar, escolhidos em Configurações > Lançamento. Rápido (padrão): lança na hora na direção do mouse; o círculo de alcance aparece ao passar o mouse na magia da barra.',
       'Ao soltar: segurando a tecla aparece o círculo de alcance; ao soltar, a magia sai (Esc cancela). Com clique: a tecla escolhe a magia e mostra o alcance, o clique esquerdo lança (fora do alcance, vai até a borda); botão direito ou Esc cancelam.',
       'Clicar no botão da magia e depois no chão também lança.',
+      ATTACK_TEXT,
       'Roda do mouse: zoom. Espaço + arrastar com o botão esquerdo: mover a câmera; Espaço sozinho volta ao centro.',
       `${k('board')} (segurar): placar; com ele aberto, ← → troca entre Rodada, Partida e Sala.`,
       `${k('taunt')}: provocações. ${sheet}: ficha do mago. ${k('shop')}: loja só para ver durante a rodada (o jogo não pausa; ${k('shop')}, Esc ou ✕ fecham). ${k('rules')}: este grimório.${keyOf('vote') ? ` ${k('vote')}: votar.` : ''}`,
@@ -159,10 +166,11 @@ const RULES_EN: typeof RULES_PT = {
     const k = (a: UiAction) => uiLabel(a);
     const sheet = keyOf('sheet') === 'Backquote' ? 'Key left of the 1 (` on a US keyboard)' : k('sheet');
     return [
-      `Right-click the ground: walk (hold to drag the destination). ${k('stop')}: stop (while casting, cancels the spell without spending the cooldown). Esc: cancels the chosen spell, closes whatever is open and, with nothing open, opens the settings.`,
+      `Right-click the ground: walk (hold to drag the destination). ${k('stop')}: stop (while casting, cancels the spell without spending the cooldown). Hold for 0.5 s to activate Hold ground: 15% less knockback, but your cooldowns pause (Incapacitate); ready abilities remain available. While active, walking commands are ignored, not queued: release the key and give a new order to walk. External knockback still applies. Pose and a short sonic boom signal activation; releasing early cancels it. Esc: cancels the chosen spell, closes whatever is open and, with nothing open, opens the settings.`,
       'Spell key: three ways to cast, chosen in Settings > Casting. Quick (default): casts instantly toward the mouse; the range circle shows when you hover the spell on the bar.',
       'On release: holding the key shows the range circle; when you release, the spell goes off (Esc cancels). With click: the key picks the spell and shows the range, left click casts (out of range, it goes to the edge); right click or Esc cancel.',
       'Clicking the spell button and then the ground also casts.',
+      ATTACK_TEXT,
       'Mouse wheel: zoom. Space + drag with the left button: move the camera; Space alone recenters.',
       `${k('board')} (hold): scoreboard; with it open, ← → switches between Round, Match and Room.`,
       `${k('taunt')}: taunts. ${sheet}: wizard sheet. ${k('shop')}: view-only shop during the round (the game does not pause; ${k('shop')}, Esc or ✕ close it). ${k('rules')}: this grimoire.${keyOf('vote') ? ` ${k('vote')}: vote.` : ''}`,

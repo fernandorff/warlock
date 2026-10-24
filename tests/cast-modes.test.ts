@@ -26,6 +26,8 @@ beforeAll(async () => {
     pick: (x, y): Vec => ({ x, y }),
     move: (to) => log.push(`move ${to.x},${to.y}`),
     stop: () => log.push('stop'),
+    brace: (on) => log.push(`brace ${on}`),
+    basic: (at) => log.push(`basic ${at.x},${at.y}`),
     cast: (s, at) => (log.push(`cast ${s} ${at.x},${at.y}`), ok),
     center: () => {},
     zoom: () => {},
@@ -48,6 +50,59 @@ beforeEach(() => {
 });
 
 describe('jeitos de lançar no PC', () => {
+  it('S para uma vez, renova a defesa e libera ao soltar', () => {
+    vi.useFakeTimers();
+    key('keydown', 'KeyS');
+    expect(log).toEqual(['stop', 'brace true']);
+    vi.advanceTimersByTime(210);
+    expect(log.filter((s) => s === 'brace true')).toHaveLength(3);
+    key('keyup', 'KeyS');
+    expect(log.at(-1)).toBe('brace false');
+    const count = log.length;
+    vi.advanceTimersByTime(500);
+    expect(log).toHaveLength(count);
+    vi.useRealTimers();
+  });
+  it('A arma Atacar; clique esquerdo envia uma ordem manual', () => {
+    key('keydown', 'KeyA');
+    expect(log).toEqual([]);
+    click(0, 30, 40);
+    expect(log).toEqual(['basic 30,40']);
+  });
+  it.each(['Escape', 'KeyS', 'KeyQ'])('%s cancela Atacar escolhido', (code) => {
+    key('keydown', 'KeyA'); key('keydown', code); click(0);
+    expect(log.some((s) => s.startsWith('basic'))).toBe(false);
+  });
+  it.each(['blur', 'pointercancel'])('não envia movimento fantasma após %s interromper o botão direito', (event) => {
+    vi.spyOn(performance, 'now').mockReturnValue(1000000 + performance.now());
+    click(2);
+    log = [];
+    fire(win, event, {});
+    fire(cnv, 'pointermove', { clientX: 400, clientY: 300, buttons: 2 });
+    expect(log).toEqual([]);
+    fire(win, 'pointerup', { button: 2 });
+    vi.restoreAllMocks();
+  });
+
+  it('sem pointerup, mouse com botão solto não renova o destino de caminhada', () => {
+    vi.spyOn(performance, 'now').mockReturnValue(2000000 + performance.now());
+    click(2);
+    log = [];
+    fire(cnv, 'pointermove', { clientX: 400, clientY: 300, buttons: 0 });
+    expect(log).toEqual([]);
+    fire(win, 'pointerup', { button: 2 });
+    vi.restoreAllMocks();
+  });
+
+  it('segurar de verdade o botão direito continua arrastando o destino', () => {
+    vi.spyOn(performance, 'now').mockReturnValue(3000000 + performance.now());
+    click(2);
+    log = [];
+    fire(cnv, 'pointermove', { clientX: 400, clientY: 300, buttons: 2 });
+    expect(log).toEqual(['move 400,300']);
+    fire(win, 'pointerup', { button: 2 });
+    vi.restoreAllMocks();
+  });
   it('Esc só é consumido (preventDefault) com magia escolhida ou segurada; sobrando, ele segue para abrir as configurações', () => {
     let used = 0;
     const esc = () => fire(win, 'keydown', { code: 'Escape', repeat: false, preventDefault: () => used++ });

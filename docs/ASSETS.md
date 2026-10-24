@@ -32,6 +32,7 @@
 | `tex/lava005.jpg` | beira derretida das ilhas | `src/client/scene.ts` | ambientCG Lava005, CC0 |
 | `fx/*.png` (23) | partículas: fogo, chamas, fumaça, faíscas, brilho, círculo, marca de queimado, rastro, redemoinho, estrela, vapor | `src/client/scene.ts` (`/fx/${name}.png`) | Kenney Particle Pack e Smoke Particles, CC0 |
 | `sfx/*.mp3` (10) | efeitos: bola de fogo, explosão, golpe, míssil, raio, escudo, teleporte, laço da lava, clique, confirmar | `src/client/sound.ts` (`/sfx/${name}.mp3`) | Kenney, OpenGameArt e Freesound, CC0 (detalhe no CREDITS) |
+| `sfx/brace_start.mp3` | aviso único do Manter base, depois dos 0,5 s de preparo; toca inteiro, na velocidade original | `src/client/sound.ts` (`brace`), disparado em `src/client/main.ts` | gravação enviada por Leonard, declarada CC0 por ele; origem a confirmar no PR #293 (detalhe no CREDITS) |
 | `sfx/taunt/*.mp3` (10) | vozes das provocações | `src/shared/taunts.ts`, `src/client/sound.ts` | Kenney Voiceover, OpenGameArt, CC0; "Ultra kill" é voz sintética feita para o jogo |
 | `taunts-local/*.mp4` (5) | provocações gravadas pelo Leonard: Tá pegando fogo!, Bosta city!, Foi uma delícia..., Usaram e abusaram., Lanchado | `src/shared/taunts.ts`, `src/client/sound.ts`, `src/client/scene.ts` | gravadas no celular pelo Leonard (lboesmans), que autorizou uso e redistribuição no jogo; sem licença livre, aceito pelo Fernando em 21/10/2026 (PR #243) |
 | `music/battle.mp3` | música da partida (laço) | `src/client/sound.ts` | Emma_MA "Determined Pursuit", CC0 |
