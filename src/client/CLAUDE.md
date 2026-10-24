@@ -4,6 +4,8 @@ Vale junto com o `CLAUDE.md` da raiz.
 
 ## Interface
 
+- Gêiser em Suporte: mira no chão como Agarrar; jato azul eleva o alvo e bloqueia previsão/comandos durante a suspensão. Ficha e demonstração PT/EN seguem os stats compartilhados.
+
 - Curar: tecla/barra seleciona e clique no modelo confirma, independente de modo Rápido/Ao soltar. Sem fallback do chão; inválido mantém seleção, Esc/S/direito cancelam. Aura verde1,5s e coral sintetizado original tocam no evento confirmado, respeitando mixer/distância. PT/EN/ficha/demo/ícone próprio acompanham stats.
 
 - Categoria Suporte/Support vazia no catálogo, verde anterior de Mobilidade; Mobilidade amarela. searchFilter aceita keepEmpty para preservar categoria vazia sem pesquisa, respeitando o filtro. Aprender/loja/Grimório usam o catálogo comum; magias futuras entram em PRs próprias.

@@ -4,6 +4,8 @@ CRÉDITOS DOS ASSETS (os ícones são CC BY 3.0, com crédito obrigatório, ver 
 
 Coral “ooooh” de Curar: síntese original por osciladores/harmônicos/vibrato em src/client/sound.ts; sem gravação, voz de pessoa ou asset externo.
 
+Gêiser: ícone water-geyser original em SVG; jato/espuma/poça gerados proceduralmente com Three.js. Sem novo asset externo; reutiliza partículas/áudio já creditados.
+
 == Modelos 3D ==
 models/decor.glb
   Junção (scripts/assets/merge-decor.mjs) de modelos de:

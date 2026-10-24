@@ -43,6 +43,7 @@ export function createPredict() {
       if (me) me.target = null;
     },
     move(to: Vec) {
+      if (velocitySource && (velocitySource.geyserLeft ?? 0) > 0) return;
       if (attackHold) { holdUntil = 0; queued = undefined; attackHold = false; }
       if (now() < holdUntil) queued = to;
       else if (me) me.target = to;
@@ -76,7 +77,9 @@ export function createPredict() {
       }
       // O residual continua no servidor depois de liberar a caminhada; reler o mesmo snapshot por quadro renovaria o impulso.
       // Fica antes do ramo de empurrado/morto abaixo, que manda na posição quando o servidor ainda desliza o mago.
-      const stunned = server.stunLeft === undefined ? isStunned(server) : !!(server.status & 16);
+      const suspended = (server.geyserLeft ?? 0) > 0;
+      const stunned = suspended || (server.stunLeft === undefined ? isStunned(server) : !!(server.status & 16));
+      if (suspended) { me.target = null; queued = undefined; }
       if (wasStunned && !stunned) me.pos = { ...server.pos };
       wasStunned = stunned;
       const dashing = server.alive && !!(server.status & DASHING_BIT);

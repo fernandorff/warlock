@@ -174,6 +174,7 @@ export function threatTo(w: World, me: Wizard, visible: (p: Projectile) => boole
 export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = BOT_SKILL.normal, scores: Record<string, number> = {}): Cmd[] {
   const me = w.wizards.find((z) => z.id === id && z.alive);
   if (!me) return [];
+  if ((me.geyserLeft ?? 0) > 0) return [];
   const M = mind(w);
   if (w.t < (M.frozen.get(id) ?? -1)) return []; // parado por erro
   const cmds: Cmd[] = [];
@@ -453,6 +454,7 @@ export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = 
     if (s === 'fireball') at = d < L.range + 1 ? lead(L.speed, cp) : null; // colado também (18/10: no fim da rodada os bots se prendiam sem se bater)
     else if (s === 'homing') at = d < 12 ? seenNow : null;
     else if (s === 'meteor') at = d < L.range ? lead(0, cp + METEOR_DELAY) : null;
+    else if (s === 'geyser') at = E.casting && d < L.range ? E.pos : null; // interrompe preparo; não protege inimigo à toa.
     else if (s === 'grip') {
       // só com dano pronto para emendar; preso na lava (ou deslizando para ela) não volta andando; e o Agarrar corta o Flagelo em preparo
       prio = !inside(E.pos, 0.6) || !inside(slideEnd, 0.3) || (E.casting?.spell === 'scourge' && d < 3);

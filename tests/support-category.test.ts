@@ -11,7 +11,7 @@ describe('categoria Suporte', () => {
     for (const [groups, name] of [[SPELL_GROUPS_PT, 'Suporte'], [SPELL_GROUPS_EN, 'Support']] as const) {
       expect(groups).toHaveLength(5);
       expect(groups[4][0]).toBe(name);
-      expect(groups[4][2]).toEqual(['heal']);
+      expect(groups[4][2]).toEqual(['heal', 'geyser']);
       expect(groups.flatMap(([, , ids]) => ids).sort()).toEqual([...SPELL_IDS].sort());
       expect(groups[1][2]).toEqual(SPELL_GROUP_IDS.mobility);
       expect(groups[2][2]).toEqual(SPELL_GROUP_IDS.defense);

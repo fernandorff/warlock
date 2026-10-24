@@ -66,6 +66,7 @@ const IR_CONFIG = IR.find((p) => p.startsWith('config:'))?.slice(7);
 
 // som de cada magia: as novas reaproveitam os sons que já existem
 const SPELL_SOUND: Record<SpellId, SoundKind> = {
+  geyser: 'splash',
   heal: 'heal',
   fireball: 'fireball', lightning: 'lightning', homing: 'homing', shield: 'shield', teleport: 'teleport',
   swap: 'teleport', grip: 'lightning', meteor: 'fireball', rush: 'shield', cluster: 'fireball',
@@ -390,6 +391,7 @@ function startRoom(code: string, name: string) {
       return scene.pick(x, y);
     },
     move(to, held = false) {
+      if ((myWizard(interp.latest())?.geyserLeft ?? 0) > 0) return;
       if ((myWizard(interp.latest())?.status ?? 0) & BRACING_BIT) return;
       command({ t: 'move', x: to.x, y: to.y, held });
       predict.move(to);
@@ -400,6 +402,7 @@ function startRoom(code: string, name: string) {
     pickAttack: (x, y) => scene.pickMage(x, y),
     attackArmedChanged: (on) => { canvas.style.cursor = on ? 'crosshair' : ''; },
     basic(at, clicked) {
+      if ((myWizard(interp.latest())?.geyserLeft ?? 0) > 0) return;
       if ((myWizard(interp.latest())?.status ?? 0) & 16) return;
       const target = clicked?.endsWith('~ilusao') ? interp.latest()?.projectiles.find((q) => q.kind === 'illusion' && room?.ids[q.vel.x] === clicked.slice(0, -7))?.id : clicked;
       command({ t: 'basic', x: at.x, y: at.y, target });
@@ -413,6 +416,7 @@ function startRoom(code: string, name: string) {
       scourgeUntil = 0; // o S cancela o Flagelo em preparo
     },
     cast(spell, at) {
+      if ((myWizard(interp.latest())?.geyserLeft ?? 0) > 0) return;
       const state = myWizard(interp.latest())?.status ?? 0;
       if (castBlocked(!!(state & 16), !!(state & 128), spell)) return;
       const i = SPELL_IDS.indexOf(spell);

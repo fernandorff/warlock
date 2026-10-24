@@ -6,6 +6,7 @@ import { createBraceClip } from './brace-pose.ts';
 import { createAttackClip } from './attack-pose.ts';
 import { electroPulse } from './screen-data.ts';
 import { HEAL_FX, healAura } from './heal-fx.ts';
+import { GEYSER_FX, geyserHeight } from './geyser-fx.ts';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -36,7 +37,7 @@ export const BOT_LEVEL: Record<MatchOpts['difficulty'], string> = { easy: t('Fá
 
 // xp: Ascensão, nível e quanto do nível já encheu (liveLevel), para a barrinha embaixo da vida
 // place: colocação no placar (1 a 3) para a medalha à esquerda do nome (todos os modos, fora da sandbox)
-export type WizDraw = { place?: number; xp?: { level: number; frac: number } | null; id: string; pos: Vec; facing: number; hp: number; hpMax: number; status: number; alive: boolean; shield: boolean; shieldR?: number; rushLeft?: number; basicLeft?: number; basicMelee?: boolean; regen?: number; bot?: MatchOpts['difficulty'] | null; loot?: number; color: number; character: string; look?: string; name: string; moving: boolean; cheer: boolean; team?: number | null; illusion?: boolean; ghost?: boolean; fx?: number[] }; // ghost: meio transparente; fx: tempo dos meus efeitos (snap.fx), só no meu mago
+export type WizDraw = { geyserLeft?: number; place?: number; xp?: { level: number; frac: number } | null; id: string; pos: Vec; facing: number; hp: number; hpMax: number; status: number; alive: boolean; shield: boolean; shieldR?: number; rushLeft?: number; basicLeft?: number; basicMelee?: boolean; regen?: number; bot?: MatchOpts['difficulty'] | null; loot?: number; color: number; character: string; look?: string; name: string; moving: boolean; cheer: boolean; team?: number | null; illusion?: boolean; ghost?: boolean; fx?: number[] }; // ghost: meio transparente; fx: tempo dos meus efeitos (snap.fx), só no meu mago
 
 // personagens KayKit: cada GLB carrega na primeira vez que alguém usa uma peça dele
 export type Model = { scene: THREE.Group; clips: THREE.AnimationClip[] };
@@ -560,6 +561,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
   // aparência de cada projétil: corpo, cor do brilho e do rastro, textura do rastro e tamanho
   // a cópia da Ilusão não entra: é desenhada como mago (main.ts)
   const LOOK: Record<Exclude<ProjKind, 'illusion'>, { mat: THREE.Material; halo: string; trail: string; tex: THREE.Texture; size: number }> = {
+    geyser: { mat: swapMat, halo: GEYSER_FX.color, trail: GEYSER_FX.foam, tex: FX.light, size: 1 },
     basic: { mat: swapMat, halo: '#dcfffb', trail: '#2fe0d0', tex: FX.spark, size: .45 },
     fireball: { mat: fireMat, halo: '#ffb000', trail: '#ff8a00', tex: FX.flame, size: 1.15 },
     homing: { mat: homingMat, halo: '#c23cff', trail: '#b040ff', tex: FX.magic, size: 1.1 },
@@ -685,6 +687,17 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
     link: () => new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.04, 6, 16), flat('#bfe6ff', '#2a7aff', 1.2)),
     splitter: () => new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 0), flat('#a0f0ff', '#2080ff', 1.2)),
     shard: () => new THREE.Mesh(new THREE.TetrahedronGeometry(0.13), flat('#d0f4ff', '#40a0ff', 1.4)),
+    geyser: () => {
+      const g = new THREE.Group();
+      const jet = new THREE.Mesh(new THREE.CylinderGeometry(.65, .3, GEYSER_FX.height, 12, 1, true), new THREE.MeshBasicMaterial({ color: GEYSER_FX.color, transparent: true, opacity: .45, side: THREE.DoubleSide, depthWrite: false }));
+      jet.position.y = GEYSER_FX.height / 2;
+      const foam = new THREE.Mesh(new THREE.TorusGeometry(.7, .12, 6, 20), new THREE.MeshBasicMaterial({ color: GEYSER_FX.foam, transparent: true, opacity: .75, depthWrite: false }));
+      foam.rotation.x = -Math.PI / 2; foam.position.y = GEYSER_FX.height;
+      const pool = new THREE.Mesh(new THREE.RingGeometry(.7, 1, 32), new THREE.MeshBasicMaterial({ color: GEYSER_FX.color, transparent: true, opacity: .45, side: THREE.DoubleSide, depthWrite: false }));
+      pool.rotation.x = -Math.PI / 2; pool.position.y = .04;
+      g.add(jet, foam, pool);
+      return g;
+    },
     warpzone: () => {
       // cúpula de vidro com borda no chão; raio 1 aqui, o tamanho real vem do servidor
       const g = new THREE.Group();
@@ -1667,6 +1680,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
           core.scale.setScalar(p.vel.x); // vel.x = raio
           halo.visible = false;
         }
+        if (p.kind === 'geyser') { core.scale.set(p.vel.x, 1, p.vel.x); halo.visible = false; }
         // fogo de verdade: chama animada em volta dos projéteis de fogo; redemoinho na Gravidade e na Zona de dobra
         if (FIRE_KINDS.has(p.kind)) {
           const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: FLAMES[0], color: '#ffc060', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -1703,6 +1717,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
         (warn.material as THREE.MeshBasicMaterial).opacity = 0.5 + 0.4 * Math.sin(performance.now() / 70);
       } else if (p.kind === 'grip') g.position.copy(w3(p.pos, .045));
       else if (p.kind === 'warpzone') g.position.copy(w3(p.pos, 0));
+      else if (p.kind === 'geyser') g.position.copy(w3(p.pos, 0));
       else g.position.copy(w3(p.pos, 0.9));
       if (p.kind === 'link') {
         const dx = p.vel.x - p.pos.x, dz = p.vel.y - p.pos.y;
@@ -1714,7 +1729,11 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       // giro e direção: aponta para onde voa; anéis, bumerangue e pedras giram
       const body = g.children[0];
       const t = performance.now() / 1000;
-      if (p.kind !== 'meteor' && p.kind !== 'warpzone' && p.kind !== 'grip' && p.kind !== 'link' && (p.vel.x || p.vel.y)) body.rotation.y = Math.atan2(p.vel.x, p.vel.y);
+      if (p.kind !== 'meteor' && p.kind !== 'warpzone' && p.kind !== 'grip' && p.kind !== 'geyser' && p.kind !== 'link' && (p.vel.x || p.vel.y)) body.rotation.y = Math.atan2(p.vel.x, p.vel.y);
+      if (p.kind === 'geyser') {
+        body.rotation.y = t * .8;
+        if (Math.random() < (lite ? .15 : .45)) burst(v(p.pos.x + (Math.random() - .5) * p.vel.x, p.pos.y + (Math.random() - .5) * p.vel.x), GEYSER_FX.foam, .35, .6, .2, FX.light, 2.1);
+      }
       if (p.kind === 'boomerang') body.rotation.y = t * 18;
       else if (p.kind === 'fireball' || p.kind === 'meteor' || p.kind === 'cluster' || p.kind === 'bouncer' || p.kind === 'snowball' || p.kind === 'splitter' || p.kind === 'shard') body.rotation.set(t * 3, t * 4, 0);
       else if (p.kind === 'link') body.rotation.y = t * 6;
@@ -1731,7 +1750,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       if (swirl) swirl.material.rotation = -t * 4;
       // rastro: brasas que ficam para trás e somem
       const look = LOOK[p.kind];
-      if (p.kind !== 'warpzone' && p.kind !== 'grip' && Math.random() < (lite ? 0.35 : 0.7)) burst(p.pos, look.trail, 1.1 * look.size, 0.35, 0.9, FIRE_KINDS.has(p.kind) ? FLAMES[Math.floor(Math.random() * FLAMES.length)] : look.tex);
+      if (p.kind !== 'warpzone' && p.kind !== 'grip' && p.kind !== 'geyser' && Math.random() < (lite ? 0.35 : 0.7)) burst(p.pos, look.trail, 1.1 * look.size, 0.35, 0.9, FIRE_KINDS.has(p.kind) ? FLAMES[Math.floor(Math.random() * FLAMES.length)] : look.tex);
     }
     for (const [id, g] of projs) if (!seen.has(id)) {
       scene.remove(g);
@@ -1771,6 +1790,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       }
       const hidden = !d.illusion && (d.status & 2048) > 0; // a cópia é sempre visível; os inimigos não veem o jogador velado
       m.root.visible = !hidden;
+      m.model.position.y = d.alive ? geyserHeight(d.geyserLeft ?? 0) : 0;
       // A cópia é sólida e visível; a invisibilidade vale somente para o jogador real.
       const ghost = !!d.ghost || (d.status & (1024 | 8388608)) > 0; // Caminhada no vento e o véu visto por si ou pela visão de teste da sandbox
       // Teleporte: tk de 0 a 1 sumindo e deslizando rumo ao destino, de 1 a 2 chegando de um pouco atrás; 2 = sem efeito
@@ -1799,7 +1819,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       m.aura.scale.setScalar(healing.visible ? healing.scale : 1.45);
       if (m.aura.visible) {
         const mat = m.aura.material as THREE.MeshBasicMaterial;
-        mat.color.set(healing.visible ? HEAL_FX.color : invuln ? '#ffd36a' : RUNE_COLOR.shield);
+        mat.color.set(healing.visible ? HEAL_FX.color : (d.geyserLeft ?? 0) > 0 ? GEYSER_FX.color : invuln ? '#ffd36a' : RUNE_COLOR.shield);
         mat.opacity = healing.visible ? healing.opacity : invuln ? 0.55 + 0.3 * Math.sin(now * 8) : 0.8;
       }
       m.ring.visible = d.alive;
@@ -1821,9 +1841,10 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
           unburn(m);
         }
         // nasceu (começo da rodada ou volta no deathmatch): a invulnerabilidade do começo acabou de ligar
-        if (invuln && !m.invuln) oneShot(d.id, 'Spawn_Ground', 1.3);
+        if (invuln && !m.invuln && !(d.geyserLeft ?? 0)) oneShot(d.id, 'Spawn_Ground', 1.3);
         // atordoado (16: arremessado por um golpe) voa de braços abertos
-        if ((d.basicLeft ?? 0) > 0 && !(d.status & 16) && m.actions.Attack_Invoke) {
+        if ((d.geyserLeft ?? 0) > 0) { m.oneShotUntil = 0; play(m, 'Jump_Idle', .05); }
+        else if ((d.basicLeft ?? 0) > 0 && !(d.status & 16) && m.actions.Attack_Invoke) {
           play(m, 'Attack_Invoke', .03);
           const action = m.actions.Attack_Invoke;
           action.paused = true;
@@ -2497,7 +2518,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
       // nome e vida em cima de cada mago
       for (const m of mages.values()) {
         if (m.label.hidden) continue;
-        const [x, y] = toScreen(m.root.position.clone().setY(2.1));
+        const [x, y] = toScreen(m.root.position.clone().setY(2.1 + m.model.position.y));
         m.label.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
       }
 

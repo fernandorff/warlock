@@ -28,7 +28,7 @@ export function blastOf(a: SpellId, spells: Record<SpellId, number>): number {
   if (!spells[a]) return 0; // magia não comprada
   // Barricada não tem raio: o círculo cobre a parede de 3 pedaços, que fica atravessada no ponto
   if (a === 'rockpillar') return WALL_GAP + OBSTACLES.rockpillar.r;
-  return a === 'meteor' || a === 'grip' || a === 'warpzone' ? spellLevel(a, spells[a]).radius : 0;
+  return a === 'meteor' || a === 'grip' || a === 'warpzone' || a === 'geyser' ? spellLevel(a, spells[a]).radius : 0;
 }
 
 // largura do acerto na mira (pedido do Fernando, 21/10: ninguém sabia quanto o Raio e os projéteis pegam de lado):
@@ -87,4 +87,4 @@ export function aimOf(a: SpellId, spells: Record<SpellId, number>, items: Record
 // "Ver hitbox (teste)" da sandbox: raio no chão de cada coisa, escolhido para que círculos que se encostam = acerto
 // (firstOnSegment testa centro a centro com WIZ_R + raio do projétil). A Bola de neve usa o nível 1 (no 7 são 8 cm a mais);
 // Meteoro, Zona de dobra e Gravidade não batem em mago e já mostram a própria área
-export const hitR = (k: ProjKind) => (k === 'illusion' ? WIZ_R : k === 'snowball' ? snowR(1) : k === 'meteor' || k === 'warpzone' || k === 'gravity' ? 0 : PROJ_R);
+export const hitR = (k: ProjKind) => (k === 'illusion' ? WIZ_R : k === 'snowball' ? snowR(1) : k === 'meteor' || k === 'warpzone' || k === 'gravity' || k === 'geyser' ? 0 : PROJ_R);

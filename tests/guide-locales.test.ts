@@ -7,6 +7,11 @@ describe('guias nas duas línguas', () => {
     vi.stubGlobal('localStorage', { getItem: (key: string) => key === 'warlock:lang' ? lang : null });
     const { MECHANIC_GUIDES, NEGATIVE_GUIDES, RULES_SHORT } = await import('../src/client/rules-text.ts');
     const { spellTip } = await import('../src/client/tips.ts');
+    expect(RULES_SHORT.geyser).toContain(lang === 'pt' ? 'Invoca no chão' : 'ground geyser');
+    expect(RULES_SHORT.geyser).toContain(lang === 'pt' ? 'invulneráveis' : 'invulnerable');
+    expect(spellTip('geyser',1)).toContain('data-demo="geyser"');
+    expect(spellTip('geyser',1)).toContain(lang === 'pt' ? '2,5' : '2.5');
+    expect(spellTip('geyser',1)).toContain('20');
     expect(RULES_SHORT.heal).toContain('45');
     expect(RULES_SHORT.heal).toContain(lang === 'pt' ? 'você ou um aliado' : 'yourself or an ally');
     expect(spellTip('heal', 1)).toContain(lang === 'pt' ? 'Cura' : 'Healing');

@@ -23,6 +23,8 @@ export type Wizard = {
   braceReadyAt?: number; // efeitos só entram depois do preparo contínuo de0,5s.
   electroUntil?: number; // lentidão elétrica e Incapacitar, sem bloquear habilidades já prontas.
   stunLeft?: number; // bloqueio de ações separado da força física, para resistência reduzir só a duração.
+  geyserLeft?: number;
+  geyserAt?: Vec; // âncora horizontal: forças externas não deslocam quem está sustentado.
   target: Vec | null;
   moveHeld?: boolean; // direito mantido: continua tentando andar mesmo impedido por obstáculo.
   blockedMove?: boolean; // destino de clique único cancelado por obstáculo; reconcilia também a previsão.
@@ -96,7 +98,7 @@ export type Wizard = {
 // drain e recharge com back voltam a quem lançou (cura, recarga); link fica preso a um mago ou obstáculo; splitter vira lançador de shard;
 // warpzone não anda (zona de tempo lento); illusion é a cópia autônoma do mago, que dura até o prazo mesmo quando atingida
 export const PROJ_KINDS = ['fireball', 'homing', 'swap', 'grip', 'meteor', 'cluster', 'boomerang', 'gravity', 'bouncer',
-  'drain', 'snowball', 'illusion', 'magnetize', 'recharge', 'link', 'splitter', 'shard', 'warpzone', 'basic'] as const;
+  'drain', 'snowball', 'illusion', 'magnetize', 'recharge', 'link', 'splitter', 'shard', 'warpzone', 'basic', 'geyser'] as const;
 export type ProjKind = (typeof PROJ_KINDS)[number];
 
 export type Projectile = {
@@ -355,12 +357,19 @@ function placePillars(arena: ArenaId, arenaR: number, n: number, spawns: Vec[], 
 }
 
 export const isSliding = (wz: { vel: Vec }) => len(wz.vel) > STUN_SPEED;
-export const isStunned = (wz: { vel: Vec; stunLeft?: number }) => wz.stunLeft === undefined ? isSliding(wz) : wz.stunLeft > 1e-8;
+export const isSuspended = (wz: { geyserLeft?: number }) => (wz.geyserLeft ?? 0) > 1e-8;
+export const isStunned = (wz: { vel: Vec; stunLeft?: number; geyserLeft?: number }) => isSuspended(wz) || (wz.stunLeft === undefined ? isSliding(wz) : wz.stunLeft > 1e-8);
 // velocidade das botas que agem agora: as de choque depois de um golpe, as de vento na calmaria (não somam: vale a maior)
 export const bootsBonus = (w: World, wz: Wizard) =>
   Math.max(w.t < wz.shockUntil ? wz.shockBonus : 0, wz.windBonus > 0 && w.t - wz.calmSince >= WIND_BOOTS.calm ? wz.windBonus : 0);
 
 export function moveWizard(wz: Wizard, dt: number) {
+  if (isSuspended(wz)) {
+    wz.target = null; wz.vel = v(0, 0);
+    if (wz.geyserAt) wz.pos = { ...wz.geyserAt };
+    if (wz.stunLeft !== undefined) wz.stunLeft = Math.max(0, wz.stunLeft - dt);
+    return;
+  }
   const sliding = isSliding(wz);
   const left = wz.recoveryLeft ?? 0;
   const recovery = left > 1e-8 ? KNOCK_RECOVERY.start + KNOCK_RECOVERY.step * Math.floor((KNOCK_RECOVERY.seconds - left + 1e-8) / KNOCK_RECOVERY.interval) : 1;
@@ -490,7 +499,8 @@ function firstOnSegment(w: World, a: Vec, b: Vec, radius: number, skip: string, 
   const d = sub(b, a);
   let best: { wz: Wizard; t: number } | null = null;
   for (const wz of w.wizards) {
-    if (!wz.alive || wz.id === skip || (only !== undefined && wz.id !== only)) continue;
+    // Corpo suspenso está fora do plano dos projéteis, inclusive a bolha de colisão do Escudo.
+    if (!wz.alive || isSuspended(wz) || wz.id === skip || (only !== undefined && wz.id !== only)) continue;
     const [t, gap] = segT(a, d, wz.pos);
     // com escudo, a bolha (maior que o mago) é que encosta
     if (gap > radius + bubble(w, wz)) continue;
@@ -625,7 +635,7 @@ function blockPillars(w: World, walking?: ReadonlySet<Wizard>) {
       continue;
     }
     for (const wz of w.wizards) {
-      if (!wz.alive) continue;
+      if (!wz.alive || isSuspended(wz)) continue;
       const d = sub(wz.pos, p.pos);
       const l = len(d);
       const min = OBSTACLES[p.kind].r + WIZ_R;
@@ -648,7 +658,7 @@ function nearestEnemy(w: World, to: Vec, skip: string, owner = skip): Wizard | n
   const team = anyById(w, owner)?.team ?? null;
   let best: Wizard | null = null;
   for (const wz of w.wizards) {
-    if (!wz.alive || wz.id === skip || wz.id === owner || (team !== null && wz.team === team)) continue;
+    if (!wz.alive || isSuspended(wz) || wz.id === skip || wz.id === owner || (team !== null && wz.team === team)) continue;
     if (!best || dist(wz.pos, to) < dist(best.pos, to)) best = wz;
   }
   return best;
@@ -669,6 +679,19 @@ function slowDown(w: World, wz: Wizard, amount: number, secs: number) {
 
 // quantos 'fire' cada lançamento conta (a Rajada sai com 4 e o Divisor com 8 filhotes); as outras, 1
 const SHOTS: Partial<Record<SpellId, number>> = { cluster: CLUSTER_FAN.length, splitter: 2 * SPLITTER.waves };
+
+function geyserLift(w: World, p: Projectile) {
+  const L = spellLevel('geyser', p.level);
+  for (const z of w.wizards) {
+    if (!z.alive || dist(z.pos, p.pos) > L.radius + WIZ_R) continue;
+    if (!isSuspended(z)) z.geyserAt = { ...z.pos };
+    z.geyserLeft = Math.max(z.geyserLeft ?? 0, p.until - w.t);
+    z.invulnUntil = Math.max(z.invulnUntil, p.until);
+    z.casting = null; z.basicCasting = undefined; z.target = null;
+    z.dashUntil = z.thrustUntil = 0; z.moveHeld = false;
+    z.vel = v(0, 0);
+  }
+}
 
 function cast(w: World, wz: Wizard, spell: SpellId, at: Vec) {
   const level = wz.spells[spell];
@@ -785,6 +808,11 @@ function cast(w: World, wz: Wizard, spell: SpellId, at: Vec) {
   } else if (spell === 'splitter') {
     // splitter.lua: estoura no ponto se ele estiver mais perto que 1 s de voo; os 8 filhotes contam como 8 tiros (SHOTS)
     launch('splitter', dir, Math.min(L.range * wz.rangeF, len(sub(at, wz.pos))) / L.speed);
+  } else if (spell === 'geyser') {
+    const to = add(wz.pos, clampLen(sub(at, wz.pos), L.range * wz.rangeF));
+    const p: Projectile = { id: w.nextId++, born: w.t, kind: 'geyser', owner: wz.id, pos: to, vel: v(0, 0), level, until: w.t + L.duration, target: null, dmgMult: 1, caster: wz.id };
+    w.projectiles.push(p);
+    geyserLift(w, p); // suspende já na criação, antes de preparos de outros magos no mesmo passo.
   } else if (spell === 'warpzone') {
     const to = add(wz.pos, clampLen(sub(at, wz.pos), L.range * wz.rangeF));
     w.projectiles.push({ id: w.nextId++, born: w.t, kind: 'warpzone', owner: wz.id, pos: to, vel: v(0, 0), level, until: w.t + L.duration, target: null, dmgMult, caster: wz.id });
@@ -830,7 +858,7 @@ function cast(w: World, wz: Wizard, spell: SpellId, at: Vec) {
       let closest = reach;
       target = undefined;
       for (const other of w.wizards) {
-        if (!other.alive || struck.has(other.id) || allies(wz, other)) continue;
+        if (!other.alive || isSuspended(other) || struck.has(other.id) || allies(wz, other)) continue;
         const distance = dist(from, other.pos);
         if (distance > closest || firstPillarOnSegment(w, from, other.pos, .1)) continue;
         // Empate mantém a ordem dos magos; não usa sorteio para escolher o próximo inimigo.
@@ -1121,7 +1149,7 @@ function windTouch(w: World, wz: Wizard) {
 }
 
 // Marcas de chão não são desviadas por habilidades; a cópia da Ilusão continua móvel.
-const fixed = (p: Projectile) => p.kind === 'meteor' || p.kind === 'warpzone' || p.kind === 'grip';
+const fixed = (p: Projectile) => p.kind === 'meteor' || p.kind === 'warpzone' || p.kind === 'grip' || p.kind === 'geyser';
 const returning = (p: Projectile) => !!p.back && (p.kind === 'drain' || p.kind === 'recharge'); // bolinha voltando a quem lançou
 export const spellOf = (k: ProjKind): SpellId => (k === 'shard' ? 'splitter' : k === 'basic' ? 'fireball' : k); // básico reusa só a classificação visual; stats e precisão próprios abaixo.
 // acerto conta para quem lançou ('land'), não para quem devolveu; once: só o primeiro (os que acertam mais de uma vez)
@@ -1179,7 +1207,7 @@ function alter(w: World, p: Projectile, next: Vec): boolean {
   if (p.kind === 'gravity') return false;
   const owner = anyById(w, p.owner);
   for (const z of w.wizards) {
-    if (!z.alive || w.t >= z.alterUntil || z.id === p.owner || allies(owner, z)) continue;
+    if (!z.alive || isSuspended(z) || w.t >= z.alterUntil || z.id === p.owner || allies(owner, z)) continue;
     if (dist(next, z.pos) > spellLevel('alteration', z.spells.alteration).radius + PROJ_R || dot(p.vel, sub(z.pos, p.pos)) <= 0) continue;
     const from = z.pos;
     [z.pos, p.pos] = [p.pos, from];
@@ -1356,6 +1384,12 @@ function stepProjectiles(w: World) {
   const keep: Projectile[] = [];
   // projéteis criados durante o passo (cura do Drenar, filhotes do Divisor) entram no fim da lista e já andam neste passo
   for (const p of w.projectiles) {
+    if (p.kind === 'geyser') {
+      if (w.t + 1e-8 >= p.until) continue;
+      geyserLift(w, p);
+      keep.push(p);
+      continue;
+    }
     if (p.kind === 'grip') {
       if (w.t >= p.until) gripLand(w, p);
       else keep.push(p);
@@ -1394,7 +1428,8 @@ function stepProjectiles(w: World) {
       const owner = anyById(w, p.owner);
       const aim = owner && attackBody(w, owner, p.decoyTarget ?? p.target!, false);
       if (!aim) continue; // não troca de alvo nem persegue uma vida nova após a morte.
-      p.vel = scale(norm(sub(aim.pos, p.pos)), BASIC_ATTACK.speed);
+      // Um alvo que subiu não faz o projétil parar ou dar meia-volta sob o jato.
+      if (!p.target || !isSuspended(anyById(w, p.target) ?? {})) p.vel = scale(norm(sub(aim.pos, p.pos)), BASIC_ATTACK.speed);
     }
     if (p.kind === 'boomerang' && (w.t >= p.until || !steerBoomerang(w, p, dt))) continue;
     if (p.kind === 'link' && w.t >= (p.turnAt ?? Infinity)) {
@@ -1408,12 +1443,12 @@ function stepProjectiles(w: World) {
       // o Drenar vira para o mago mais perto, aliado ou inimigo (drainprojectile.lua)
       p.turnAt = undefined;
       let to: Wizard | null = null;
-      for (const z of w.wizards) if (z.alive && z.id !== p.owner && (!to || dist(z.pos, p.pos) < dist(to.pos, p.pos))) to = z;
+      for (const z of w.wizards) if (z.alive && !isSuspended(z) && z.id !== p.owner && (!to || dist(z.pos, p.pos) < dist(to.pos, p.pos))) to = z;
       p.vel = scale(to ? norm(sub(to.pos, p.pos)) : norm(p.vel), DRAIN.turnSpeed);
     }
     // Ilusão: o míssil que perseguia o dono persegue a cópia enquanto ela existir
     const chase = p.kind === 'homing' ? byId(w, p.target) : undefined;
-    const target = chase && (w.projectiles.find((q) => q.kind === 'illusion' && q.owner === chase.id && q.until > w.t) ?? chase);
+    const target = chase && !isSuspended(chase) && (w.projectiles.find((q) => q.kind === 'illusion' && q.owner === chase.id && q.until > w.t) ?? chase);
     if (target) {
       // gira no máximo HOMING_TURN rad/s em direção ao alvo: o atraso faz o míssil rodear antes de acertar
       const cur = Math.atan2(p.vel.y, p.vel.x);
@@ -1605,7 +1640,7 @@ function stepProjectiles(w: World) {
 const ELASTICITY = 0.5;
 
 function separate(w: World) {
-  const alive = w.wizards.filter((z) => z.alive);
+  const alive = w.wizards.filter((z) => z.alive && !isSuspended(z));
   for (let i = 0; i < alive.length; i++) {
     for (let j = i + 1; j < alive.length; j++) {
       const a = alive[i];
@@ -1648,6 +1683,7 @@ function respawn(w: World, wz: Wizard, rand: () => number) {
   }
   Object.assign(wz, {
     alive: true, pos: best, vel: v(0, 0), target: null, casting: null, moveHeld: false, blockedMove: false, recoveryLeft: 0, stunLeft: undefined, hp: wz.hpMax, dmgTaken: 0, lastHitBy: null,
+    geyserLeft: 0, geyserAt: undefined,
     shieldUntil: 0, pactUntil: 0, dashUntil: 0, thrustUntil: 0, invulnUntil: w.t + INVULN_TIME,
     slowUntil: 0, hasteUntil: 0, snow: null, magnetUntil: 0, alterUntil: 0, windUntil: 0, veilUntil: 0, shockUntil: 0, aegis: wz.items.aegis > 0,
     rune: null, runeUntil: 0, braceUntil: 0, braceReadyAt: 0, electroUntil: 0, basicCasting: undefined,
@@ -1722,7 +1758,7 @@ function toStone(w: World, wz: Wizard) {
 function attackBody(w: World, by: Wizard, target: string | number, visible = true): Wizard | Projectile | undefined {
   if (typeof target === 'number') return enemyDecoys(w, by.id).find((p) => p.id === target);
   const z = byId(w, target);
-  return z && z !== by && !allies(by, z) && (!visible || w.t >= Math.max(z.veilUntil, z.windUntil)) ? z : undefined;
+  return z && z !== by && !allies(by, z) && (!visible || (!isSuspended(z) && w.t >= Math.max(z.veilUntil, z.windUntil))) ? z : undefined;
 }
 function beginBasic(w: World, wz: Wizard, c: Extract<Cmd, { kind: 'basic' }>) {
   if (isStunned(wz) || wz.casting || wz.basicCasting || w.t < (wz.basicReadyAt ?? 0)) return;
@@ -1760,7 +1796,7 @@ export function stepWorld(w: World, cmds: Cmd[], rand: () => number = Math.rando
   w.lavaCredit = {};
   for (const c of cmds) {
     const wz = byId(w, c.id);
-    if (!wz) continue;
+    if (!wz || isSuspended(wz)) continue;
     if (c.kind === 'brace') {
       if (c.on && w.t >= (wz.braceUntil ?? 0)) wz.braceReadyAt = w.t + BRACE.windup;
       wz.braceUntil = c.on ? w.t + BRACE.lease : 0;
@@ -1879,6 +1915,7 @@ export function stepWorld(w: World, cmds: Cmd[], rand: () => number = Math.rando
   const walking = new Set<Wizard>();
   for (const wz of w.wizards) {
     if (!wz.alive) continue;
+    if (isSuspended(wz)) { moveWizard(wz, DT); continue; }
     if (w.t < wz.dashUntil) {
       wz.pos = add(wz.pos, scale(wz.dashVel, DT)); // avançando: não anda, mas o empurrão ainda soma
       // quem o avanço encostar leva dano e é empurrado na direção do avanço (uma vez por avanço)
@@ -1914,7 +1951,8 @@ export function stepWorld(w: World, cmds: Cmd[], rand: () => number = Math.rando
     if (!wz.alive) continue;
     // Arena de espinhos: quem passa da borda volta para dentro empurrado e ferido, mais quanto mais rápido bateu (SWORDS); o crédito
     // fica com quem empurrou por último, como na lava. Antes do "vida infinita" para valer também na sandbox
-    if (w.mods.swords && edge(w, wz.pos) < SWORDS.inset && !onIsle(w.isles, wz.pos)) {
+    if (isSuspended(wz)) { wz.pos = { ...wz.geyserAt! }; wz.vel = v(0, 0); }
+    if (!isSuspended(wz) && w.mods.swords && edge(w, wz.pos) < SWORDS.inset && !onIsle(w.isles, wz.pos)) {
       const n = inward(w, wz.pos);
       const out = dot(wz.vel, n);
       if (out < 0) wz.vel = sub(wz.vel, scale(n, out)); // tira o que ia para fora; o empurrão do golpe põe para dentro
@@ -1959,6 +1997,10 @@ export function stepWorld(w: World, cmds: Cmd[], rand: () => number = Math.rando
   for (const wz of w.wizards) if (wz.alive) {
     const pause = Math.min(DT, Math.max(0, incapacitatedUntil(wz, w.t) - w.t));
     if (pause > 0) for (const s of SPELL_IDS) if (wz.cd[s] > w.t) wz.cd[s] += pause;
+  }
+  for (const z of w.wizards) if (z.geyserLeft !== undefined) {
+    z.geyserLeft = Math.max(0, z.geyserLeft - DT);
+    if (!isSuspended(z)) { z.geyserLeft = 0; z.geyserAt = undefined; }
   }
   w.t += DT;
 }
