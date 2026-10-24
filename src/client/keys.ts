@@ -7,15 +7,15 @@ import { store } from './store.ts';
 export type Action = SpellId;
 export const ACTIONS: Action[] = [...SPELL_IDS];
 // atalhos da interface (pedido do Fernando, 18/10): trocáveis no mesmo painel das magias; o Votar começa sem tecla
-export const UI_ACTIONS = ['shop', 'board', 'sheet', 'taunt', 'rules', 'library', 'stop', 'vote', 'replay', 'camera'] as const;
+export const UI_ACTIONS = ['shop', 'board', 'sheet', 'taunt', 'rules', 'library', 'stop', 'vote', 'replay', 'camera', 'basic'] as const;
 export type UiAction = (typeof UI_ACTIONS)[number];
-export const UI_NAMES: Record<UiAction, string> = { shop: t('Loja só para ver', 'Shop (view only)'), board: t('Placar (segurar)', 'Scoreboard (hold)'), sheet: t('Ficha do mago', 'Wizard sheet'), taunt: t('Provocações', 'Taunts'), rules: t('Grimório (como jogar)', 'Grimoire (how to play)'), library: t('Magias e itens (consulta)', 'Spells and items (lookup)'), stop: t('Parar', 'Stop'), vote: t('Votar', 'Vote'), replay: t('Rever a queda', 'Replay the fall'), camera: t('Câmera no mago ou na arena', 'Camera on the wizard or the arena') };
+export const UI_NAMES: Record<UiAction, string> = { shop: t('Loja só para ver', 'Shop (view only)'), board: t('Placar (segurar)', 'Scoreboard (hold)'), sheet: t('Ficha do mago', 'Wizard sheet'), taunt: t('Provocações', 'Taunts'), rules: t('Grimório (como jogar)', 'Grimoire (how to play)'), library: t('Magias e itens (consulta)', 'Spells and items (lookup)'), stop: t('Parar', 'Stop'), basic: t('Atacar', 'Attack'), vote: t('Votar', 'Vote'), replay: t('Rever a queda', 'Replay the fall'), camera: t('Câmera no mago ou na arena', 'Camera on the wizard or the arena') };
 export type AnyAction = Action | UiAction | PosAction;
 const ALL: AnyAction[] = [...ACTIONS, ...UI_ACTIONS];
 const DEFAULTS: Record<string, string> = {
   fireball: 'KeyQ', lightning: 'KeyW', homing: 'KeyE', shield: 'KeyR', teleport: 'KeyF',
   cluster: 'KeyT', swap: 'KeyD', grip: 'KeyG', rush: 'KeyC', meteor: 'KeyV',
-  boomerang: 'KeyB', thrust: 'KeyX', gravity: 'KeyH', rockpillar: 'KeyZ', bouncer: 'KeyA',
+  boomerang: 'KeyB', thrust: 'KeyX', gravity: 'KeyH', rockpillar: 'KeyZ', bouncer: '', basic: 'KeyA',
   // as dez últimas: sobraram 9 letras livres; a Zona de dobra fica sem tecla padrão (teclas por posição ou painel de teclas)
   drain: 'KeyN', snowball: 'KeyO', illusion: 'KeyJ', magnetize: 'KeyM', recharge: 'KeyK', alteration: 'KeyL', link: 'KeyU', windwalk: 'KeyI', splitter: 'KeyP', warpzone: '',
   // Flagelo e Pacto ficam nas teclas que tinham como item (viraram magia em 21/10, #217)
@@ -66,6 +66,8 @@ let slotMode = (store.get(SLOT_STORE) ?? (store.get(STORE) ? '0' : '1')) === '1'
 // atalho salvo antes de 21/10 numa tecla que agora é de posição (a Loja no 4): volta ao padrão, senão a tecla abriria a loja e lançaria a magia;
 // sem as teclas por posição nada colide, e o atalho fica onde a pessoa pôs
 if (slotMode) for (const u of UI_ACTIONS) if (Object.values(posMap).includes(map[u])) map[u] = DEFAULTS[u];
+// Ação nova nunca toma a tecla de uma preferência salva, nem de posições vazias.
+if (!(isRecord(savedKeys) && 'basic' in savedKeys) && ((slotMode ? Object.values(posMap).includes(map.basic) : ACTIONS.some((a) => map[a] === map.basic)) || UI_ACTIONS.some((a) => a !== 'basic' && map[a] === map.basic))) map.basic = '';
 let slots: (SpellId | null)[] = [];
 export const isSlotMode = () => slotMode;
 export function setSlotMode(on: boolean) {

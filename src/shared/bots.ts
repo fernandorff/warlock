@@ -1,6 +1,6 @@
 // Bots: usam qualquer magia e item ativo que tiverem e compram seguindo um plano sorteado no começo da partida.
 import { edge, inArena, inward, middle, pathStep, roomAt, safeInside } from './arena.ts';
-import { DT, FRICTION, ISLAND, OBSTACLES, PROJ_R, WIZ_R } from './constants.ts';
+import { BASIC_ATTACK, DT, FRICTION, ISLAND, OBSTACLES, PROJ_R, WIZ_R } from './constants.ts';
 import type { Cmd, Projectile, Wizard, World } from './sim.ts';
 import { ITEM_IDS, itemPrice, type ItemId } from './items.ts';
 import { CAST_POINT, FREE_SPELLS, GRIP, MAX_SPELLS, METEOR_DELAY, SPELL_IDS, priceOf, spellCount, spellLevel, type SpellId } from './spells.ts';
@@ -435,6 +435,12 @@ export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = 
     const t = Math.max(0, Math.min(1, dot(sub(q.pos, me.pos), ab) / Math.max(1e-6, dot(ab, ab))));
     return dist(add(me.pos, scale(ab, t)), q.pos) < OBSTACLES[q.kind].r + PROJ_R + 0.1;
   });
+  // Atacar (decisão do Fernando, 24/10): sem nenhuma magia pronta, com o inimigo a até 6 m e sem obstáculo no meio, o bot usa o
+  // ataque livre como o jogador; sem isso o humano teria um golpe que o bot nunca usa e o simulador não mediria o Atacar.
+  // Desvio já decidido neste comando vem antes: parar 0,4 s para atacar jogaria fora a esquiva
+  if (!veiled && !me.basicCasting && w.t >= (me.basicReadyAt ?? 0) && d <= BASIC_ATTACK.range && !blocked(E.pos) && !SPELL_IDS.some((x) => ready(x))) {
+    return [...cmds, { id, kind: 'basic', at: E.pos, target: E.id }];
+  }
   let damage = false;
   let now: (() => Cmd[]) | null = null;
   let meteor: (() => Cmd[]) | null = null;

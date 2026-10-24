@@ -14,6 +14,7 @@ export function createPredict() {
   let rttSec = 0.1;
   // conjurando: o mago fica parado até holdUntil; o clique de andar nesse meio-tempo fica guardado
   let holdUntil = 0;
+  let attackHold = false;
   let dead = false;
   let queued: Vec | null | undefined;
   const now = () => performance.now() / 1000;
@@ -41,23 +42,28 @@ export function createPredict() {
       holdUntil = 0;
       queued = undefined;
       dead = false;
+      attackHold = false;
     },
     // velocidade de andar que o servidor diz que o mago tem agora (botas, Investida, preso)
     setSpeed(sp: number) {
       if (me && sp >= 0) me.speed = sp;
     },
-    hold(secs: number) {
+    hold(secs: number, interruptible = false) {
+      if (attackHold) { holdUntil = 0; queued = undefined; }
+      attackHold = interruptible;
       if (secs <= 0) return;
       holdUntil = now() + secs;
       queued = undefined;
       if (me) me.target = null;
     },
     move(to: Vec) {
+      if (attackHold) { holdUntil = 0; queued = undefined; attackHold = false; }
       if (now() < holdUntil) queued = to;
       else if (me) me.target = to;
     },
     // o S também cancela a magia em lançamento (como no servidor): pode andar de novo na hora
     stop() {
+      attackHold = false;
       holdUntil = 0;
       queued = undefined;
       if (me) me.target = null;

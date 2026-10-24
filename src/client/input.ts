@@ -11,6 +11,9 @@ export type InputHandlers = {
   move: (to: Vec, held?: boolean) => void;
   holdMove?: (on: boolean) => void;
   stop: () => void;
+  basic?: (at: Vec, target?: string) => void;
+  pickAttack?: (x: number, y: number) => string | undefined;
+  attackArmedChanged?: (on: boolean) => void;
   cast: (spell: SpellId, at: Vec) => boolean | void; // true quando saiu de verdade (sem recarga, com a magia)
   center: () => void;
   zoom: (deltaY: number) => void;
@@ -26,6 +29,7 @@ export type InputHandlers = {
 export function createInput(canvas: HTMLCanvasElement, h: InputHandlers) {
   let cursor = { x: innerWidth / 2, y: innerHeight / 2 };
   let armed: SpellId | null = null;
+  let attackArmed = false;
   let dragging = false;
   let lastDrag = 0;
   let enabled = false;
@@ -36,6 +40,8 @@ export function createInput(canvas: HTMLCanvasElement, h: InputHandlers) {
   let panFrom = { x: 0, y: 0 };
 
   const arm = (s: SpellId | null) => {
+    attackArmed = false;
+    h.attackArmedChanged?.(false);
     armed = s;
     h.armedChanged(s);
   };
@@ -94,12 +100,15 @@ export function createInput(canvas: HTMLCanvasElement, h: InputHandlers) {
     const p = h.pick(e.clientX, e.clientY);
     if (!p) return;
     const touch = e.pointerType === 'touch';
-    if (armed && (e.button === 0 || touch)) {
+    if (attackArmed && e.button === 0) {
+      h.basic?.(p, h.pickAttack?.(e.clientX, e.clientY));
+      arm(null); // uma ordem manual por golpe; segurar A/clique não repete.
+    } else if (armed && (e.button === 0 || touch)) {
       // fora do alcance a magia sai na direção do clique, até a borda do alcance (o servidor limita)
       h.cast(armed, p);
       arm(null);
     } else if (e.button === 2 || touch) {
-      if (armed) arm(null); // botão direito cancela a magia escolhida (e anda, como no Dota)
+      if (armed || attackArmed) arm(null); // botão direito cancela a ação escolhida (e anda, como no Dota)
       h.move(p, e.button === 2);
       dragging = e.button === 2;
     }
@@ -128,6 +137,7 @@ export function createInput(canvas: HTMLCanvasElement, h: InputHandlers) {
     // teclas trocáveis pelo jogador (keys.ts)
     const action = actionFor(e.code);
     if (action) {
+      if (attackArmed) arm(null);
       e.preventDefault();
       const mode = getCastMode();
       if (mode === 'click') return arm(action); // escolhe e mostra o alcance; o clique esquerdo lança
@@ -146,10 +156,18 @@ export function createInput(canvas: HTMLCanvasElement, h: InputHandlers) {
       }
       return;
     }
-    if (isUiKey(e.code, 'stop')) h.stop();
+    if (isUiKey(e.code, 'stop')) {
+      e.preventDefault();
+      if (!e.repeat) {
+        cancel(); arm(null); releaseMove(); h.stop();
+      }
+    } else if (isUiKey(e.code, 'basic')) {
+      e.preventDefault();
+      if (!e.repeat) { cancel(); arm(null); attackArmed = true; h.attackArmedChanged?.(true); }
+    }
     else if (e.code === 'Escape') {
       // só consome o Esc se havia magia escolhida ou segurada; senão ele segue para abrir as configurações
-      if (armed || held) e.preventDefault();
+      if (armed || held || attackArmed) e.preventDefault();
       cancel();
       arm(null);
     }

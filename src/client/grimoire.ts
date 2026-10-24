@@ -9,7 +9,7 @@ import { SCRIPTS, createDemo, drawStone, runDemo, type DemoId } from './demo.ts'
 import { ICON, ITEM_ICON, RUNE_ICON, UI_ICON, actionIcon, actionName, el, icon } from './icons.ts';
 import { ACTIONS, UI_ACTIONS, UI_NAMES, isPadMode, isSlotMode, isUiKey, labelOf, uiLabel } from './keys.ts';
 import { MODE_INFO, OPT_INFO } from './opt-info.ts';
-import { ITEM_DEMO, RULES, RULES_SHORT, SPELL_GROUPS, SPELL_TIPS, SPELL_USE, groupClass, n1 } from './rules-text.ts';
+import { ATTACK_TEXT, ITEM_DEMO, RULES, RULES_SHORT, SPELL_GROUPS, SPELL_TIPS, SPELL_USE, groupClass, n1 } from './rules-text.ts';
 import { COLORS } from './scene.ts';
 import { store } from './store.ts';
 import { hideTip, itemLevels, itemTip, spellLevels, spellTip, withTip } from './tips.ts';
@@ -83,6 +83,7 @@ const PAGES: Page[] = [
   text(t('Como jogar', 'How to play'), t('Objetivo', 'Goal'), RULES.objetivo),
   text(t('Como jogar', 'How to play'), t('Empurrão, lava e abates', 'Knockback, lava and kills'), RULES.empurrao),
   text(t('Controles', 'Controls'), t('No PC', 'On PC'), () => RULES.pc),
+  { ...text(t('Controles', 'Controls'), t('Atacar', 'Attack'), [ATTACK_TEXT]), demo: 'basic' },
   {
     chapter: t('Controles', 'Controls'), title: t('Suas teclas', 'Your keys'),
     body: () => [el('h2', {}, isSlotMode() ? t('Suas teclas (1 2 3 4 Q W E R pela ordem da barra)', 'Your keys (1 2 3 4 Q W E R in bar order)') : t('Suas teclas', 'Your keys')),

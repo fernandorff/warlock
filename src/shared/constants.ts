@@ -23,12 +23,14 @@ export const FRICTION = -Math.log(0.96) / 0.035; // 0,96 por tique de 0,035 s: a
 export const KB_SOFT_CAP = 100; // golpe acima disso empurra pela raiz (como no original, pawn.lua do mod de Dota 2)
 export const KB_PER_DMG = 10 * UNIT; // empurrão (m/s) por ponto de dano: 10 unidades/s por dano, como no original
 export const STUN_SPEED = 1.5; // deslizando mais rápido que isso, o mago não anda
-// Retomada escolhida pelo Leonard: 50%, +10pp a cada0,2s, chegando a100% em1s.
+// Teste local pedido pelo Leonard: retomada em degraus, sem carregar impulso residual para a caminhada.
 export const KNOCK_RECOVERY = { seconds: 1, start: .5, step: .1, interval: .2 };
-export const KNOCK_HP_SCALE = 0; // 22/10: dano histórico não amplifica empurrão; impulsos e resistência continuam valendo.
+export const KNOCK_HP_SCALE = 0; // teste local 22/10, opção 3 do Leonard: dano histórico não amplifica o empurrão.
 export const LAVA_KB_FACTOR = 0.5;
 export const CREDIT_WINDOW = 5; // o abate vai para quem acertou nos últimos 5 s
 export const PROJ_R = 0.2;
+// Protótipo local do Leonard: ataque leve separado da build; números iniciais para teste, não balanceados.
+export const BASIC_ATTACK = { dmg: 15, knock: .8, speed: 8, range: 6, cd: .8, windup: .4, melee: 1.2 };
 export const INCAPACITATED_BIT = 268435456; // recargas pausadas; habilidades prontas continuam utilizáveis.
 export const ELECTROCUTED_BIT = 536870912; // efeito elétrico visual.
 // o projétil nasce na frente do mago, com o centro a esta distância do centro dele
