@@ -391,17 +391,19 @@ const SPELL_GROUPS_PT: SpellGroups = [
   ['Mobilidade', 'sair do lugar', [...G.mobility]],
   ['Defesa', 'parar o que vem', [...G.defense]],
   ['Controle', 'prender, puxar, atrasar', [...G.control]],
+  ['Suporte', 'sem magias por enquanto', []],
 ];
 const SPELL_GROUPS_EN: SpellGroups = [
   ['Attack', 'damage and knockback', [...G.attack]],
   ['Mobility', 'get out of the way', [...G.mobility]],
   ['Defense', 'stop what is coming', [...G.defense]],
   ['Control', 'grip, pull, slow', [...G.control]],
+  ['Support', 'no spells yet', []],
 ];
 export { SPELL_GROUPS_EN, SPELL_GROUPS_PT };
 export const SPELL_GROUPS = LANG === 'en' ? SPELL_GROUPS_EN : SPELL_GROUPS_PT;
 // classe de cor do grupo (Fernando, 19/10: uma cor por setor): g-ataque, g-mobilidade, g-defesa, g-controle (o rótulo em inglês cai na mesma classe)
-const GROUP_CLASS_EN: Record<string, string> = { attack: 'ataque', mobility: 'mobilidade', defense: 'defesa', control: 'controle' };
+const GROUP_CLASS_EN: Record<string, string> = { attack: 'ataque', mobility: 'mobilidade', defense: 'defesa', control: 'controle', support: 'suporte' };
 export const groupClass = (name: string) => 'g-' + (GROUP_CLASS_EN[name.toLowerCase()] ?? name.toLowerCase());
 export const spellClass = (s: SpellId) => groupClass(SPELL_GROUPS.find(([, , ids]) => ids.includes(s))?.[0] ?? '');
 // loja: itens passivos em seções como as magias (Fernando, 21/10), pelo efeito principal

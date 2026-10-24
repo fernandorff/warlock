@@ -33,12 +33,13 @@ const TITLE = 'Warlock';
 export const norm = (x: string) => x.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 // busca pelo nome (biblioteca): esconde os itens cujo data-name (já com norm) não tem o texto e os grupos que ficaram vazios;
 // off: grupo escondido de todo (filtro por grupo da biblioteca)
-export function searchFilter(groups: Iterable<HTMLElement>, item: string, query: string, off?: (g: HTMLElement) => boolean) {
+export function searchFilter(groups: Iterable<HTMLElement>, item: string, query: string, off?: (g: HTMLElement) => boolean, keepEmpty = false) {
   const q = norm(query.trim());
   for (const g of groups) {
     const cards = [...g.querySelectorAll<HTMLElement>(item)];
     for (const c of cards) c.hidden = !c.dataset.name!.includes(q);
-    g.hidden = cards.every((c) => c.hidden) || !!off?.(g);
+    // Categoria futura continua visível sem busca; pesquisar ainda exige correspondência.
+    g.hidden = (cards.every((c) => c.hidden) && !(keepEmpty && !q && cards.length === 0)) || !!off?.(g);
   }
 }
 // tela de toque sem mouse: os textos de ajuda falam de tocar, não de clicar
