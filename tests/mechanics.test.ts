@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ARENA_R0, DT, RUNE, STREAK, SHRINK_EVERY, SUDDEN, WIZ_R, type RuneKind } from '../src/shared/constants.ts';
+import { ARENA_R0, DT, KILL_GOLD, RUNE, STREAK, SHRINK_EVERY, SUDDEN, WIZ_R, type RuneKind } from '../src/shared/constants.ts';
 import { addPlayer, newMatch, setReady, startMatch, tickMatch, type Match } from '../src/shared/match.ts';
 import { newWorld, stepWorld, type SimEvent, type World } from '../src/shared/sim.ts';
 import { encodeSnap, decodeSnap, publicEvents } from '../src/shared/snapshot.ts';
@@ -151,6 +151,18 @@ describe('sequências de abate', () => {
     expect(kill(g, 'c', 'a')).toEqual([{ k: 'streak', id: 'a', kind: 'multi', n: 2 }]);
     wait(g, 1);
     expect(kill(g, 'd', 'a')).toEqual([{ k: 'streak', id: 'a', kind: 'multi', n: 3 }, { k: 'streak', id: 'a', kind: 'spree', n: 3 }]);
+  });
+
+  it('each kill of a streak pays +20% of the kill gold per kill before it', () => {
+    const g = playing(['a', 'b', 'c', 'd', 'e']);
+    for (const z of g.m.world!.wizards) z.invulnUntil = 0;
+    const a = g.m.players.find((p) => p.id === 'a')!;
+    const paid = ['b', 'c', 'd'].map((id) => {
+      const before = a.gold;
+      kill(g, id, 'a');
+      return a.gold - before;
+    });
+    expect(paid).toEqual([KILL_GOLD, KILL_GOLD * 1.2, KILL_GOLD * 1.4]);
   });
 
   it('kills more than 4 s apart are not a multi kill', () => {

@@ -130,7 +130,8 @@ export const SWORDS = { base: 20, perSpeed: 15, inset: 0.3 };
 export const roundMods = (e: RoundEffectId | null): RoundMods => ({ ...NO_MODS, ...(e ? ROUND_EFFECTS[e] : {}) });
 // sequências de abate (anúncio estilo Dota): abates com até 4 s entre eles; Matança e cia. contam abates sem morrer (atravessam as rodadas);
 // quem derruba alguém com 3 ou mais abates seguidos ganha o Quebra-combo
-export const STREAK = { window: 4, spree: [3, 5, 7, 10], breakAt: 3, breakGold: 3 };
+// killGold: cada abate da sequência paga +20% do ouro do abate por abate seguido antes dele (2º = ×1,2, 3º = ×1,4…; ideia do Reinaldo, issue #340)
+export const STREAK = { window: 4, spree: [3, 5, 7, 10], breakAt: 3, breakGold: 3, killGold: 0.2 };
 // ilhas de refúgio na lava (Fernando, 18/10): 4 por arena, centro a 2–4 m da borda de agora (acompanham o encolhimento), raio 1,4 m;
 // em cima não queima; com alguém em cima a lava avança 0,18 m/s (some em ~8 s), vazia volta a crescer (cheia em 30 s)
 export const ISLAND = { n: 4, r: 1.4, near: 2, far: 4, sink: 0.18, regrow: 30 };

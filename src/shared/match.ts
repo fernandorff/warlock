@@ -1317,7 +1317,7 @@ function stepMatch(m: Match, now: number, cmds: Cmd[], rand: () => number): SimE
         const avgScore = m.players.reduce((sum, q) => sum + q.score, 0) / m.players.length;
         const top = Math.max(...m.players.map((q) => q.score));
         const head = victim && m.mode !== 'deathmatch' && victim.score === top ? Math.min(BOUNTY.max, Math.round(BOUNTY.perWin * (victim.score - avgScore))) : 0;
-        bonus(m, killer, KILL_GOLD + Math.max(0, head));
+        bonus(m, killer, (KILL_GOLD + Math.max(0, head)) * (1 + STREAK.killGold * (s.kills - 1)));
       }
     }
     // a Égide quebra ao salvar (consumível): sai do inventário sem valor de venda

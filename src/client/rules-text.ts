@@ -35,6 +35,7 @@ const RULES_PT = {
     `O abate vai para quem acertou você por último nos ${CREDIT_WINDOW} s antes da morte. Cair sozinho na lava não dá abate a ninguém.`,
     `Lava conta como dano de quem empurrou: metade da vida que a lava tira de quem você acertou nos últimos ${CREDIT_WINDOW} s entra no seu dano (placar, top dano e assistência).`,
     `Abates com até ${STREAK.window} s entre eles viram Abate duplo, Abate triplo e Massacre. Abates sem morrer (contam de uma rodada para outra): ${STREAK.spree[0]} é Matança, ${STREAK.spree[1]} Fúria assassina, ${STREAK.spree[2]} Imparável e ${STREAK.spree[3]} Lendária.`,
+    `Cada abate da sequência sem morrer paga +${pct(STREAK.killGold)} do ouro do abate por abate seguido antes dele (o 2º paga +${pct(STREAK.killGold)}, o 3º +${pct(STREAK.killGold * 2)}…).`,
     `Quebra-combo: derrubar quem tem ${STREAK.breakAt} ou mais abates seguidos dá +${STREAK.breakGold} de ouro.`,
   ],
   // os textos de controles leem as teclas e botões atuais (trocáveis nas configurações): getter, refeito a cada leitura
@@ -153,6 +154,7 @@ const RULES_EN: typeof RULES_PT = {
     `The kill goes to whoever hit you last in the ${CREDIT_WINDOW} s before the death. Falling into the lava on your own gives no kill to anyone.`,
     `Lava counts as damage from whoever knocked you in: half of the health the lava takes from someone you hit in the last ${CREDIT_WINDOW} s is added to your damage (scoreboard, top damage and assists).`,
     `Kills within ${STREAK.window} s of each other become a Double kill, Triple kill and Ultra kill. Kills without dying (carried over from one round to the next): ${STREAK.spree[0]} is a Killing spree, ${STREAK.spree[1]} a Rampage, ${STREAK.spree[2]} Unstoppable and ${STREAK.spree[3]} Godlike.`,
+    `Each kill of a streak without dying pays +${pct(STREAK.killGold)} of the kill gold per kill before it (the 2nd pays +${pct(STREAK.killGold)}, the 3rd +${pct(STREAK.killGold * 2)}…).`,
     `Combo breaker: taking down someone with ${STREAK.breakAt} or more kills in a row gives +${STREAK.breakGold} gold.`,
   ],
   get pc() {
