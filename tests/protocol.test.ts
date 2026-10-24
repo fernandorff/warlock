@@ -99,7 +99,7 @@ describe('protocolo', () => {
     expect(p({ t: 'taunt', i: 9 })).toEqual({ t: 'taunt', i: 9 });
     expect(p({ t: 'taunt', i: 10 })).toEqual({ t: 'taunt', i: 10 });
     expect(p({ t: 'taunt', i: 14 })).toEqual({ t: 'taunt', i: 14 });
-    expect(p({ t: 'taunt', i: 15 })).toBeNull();
+    expect(p({ t: 'taunt', i: 23 })).toBeNull();
     expect(p({ t: 'taunt', i: 99 })).toBeNull();
     expect(p({ t: 'taunt', i: 100 })).toBeNull();
     expect(p({ t: 'taunt', i: -1 })).toBeNull();

@@ -8,6 +8,17 @@ export const CUSTOM_TAUNTS = [
   { id: 'usarameabusaram', text: 'Usaram e abusaram.', en: 'Used and abused.', src: '/taunts-local/usarameabusaram.mp4' },
   { id: 'lanchado', text: 'Lanchado', en: 'Lanchado', src: '/taunts-local/lanchado.mp4' },
 ] as const;
+// Só texto com emoji (issue #351): sem áudio, só balão; ficam depois das gravações para não mudar os índices que já existem.
+export const TEXT_TAUNTS = [
+  { id: 'noob', text: 'Noob 🤡', en: 'Noob 🤡' },
+  { id: 'get_him', text: 'Pega ele! 🔥', en: 'Get him! 🔥' },
+  { id: 'bye_lava', text: 'Tchau, lava! 👋', en: 'Bye, lava! 👋' },
+  { id: 'too_easy', text: 'Tá fácil demais 😴', en: 'Too easy 😴' },
+  { id: 'gg', text: 'GG 🤝', en: 'GG 🤝' },
+  { id: 'tough_luck', text: 'Que azar… 😢', en: 'Tough luck… 😢' },
+  { id: 'melted', text: 'Derreteu! 🌋', en: 'Melted! 🌋' },
+  { id: 'stay_in_lava', text: 'Fica na lava! 💀', en: 'Stay in the lava! 💀' },
+] as const;
 export const TAUNTS = [
   { id: 'loser', text: 'Perdedor!', en: 'Loser!' },
   { id: 'laugh', text: 'Muahaha!', en: 'Muahaha!' },
@@ -20,12 +31,13 @@ export const TAUNTS = [
   { id: 'look_out', text: 'Cuidado!', en: 'Look out!' },
   { id: 'congrats', text: 'Parabéns… 👏', en: 'Congrats… 👏' },
   ...CUSTOM_TAUNTS,
+  ...TEXT_TAUNTS,
 ] as const;
 export const TAUNT_COOLDOWN_MS = 2500;
 
 // Caminhos vêm só do catálogo fixo: nenhuma URL enviada pelo cliente é carregada.
 export function tauntAudioSrc(id: string): string | null {
   const taunt = TAUNTS.find((t) => t.id === id);
-  if (!taunt) return null;
+  if (!taunt || TEXT_TAUNTS.some((x) => x.id === id)) return null;
   return 'src' in taunt ? taunt.src : `/sfx/taunt/${taunt.id}.mp3`;
 }

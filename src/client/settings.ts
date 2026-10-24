@@ -12,7 +12,7 @@ import { RULES } from './rules-text.ts';
 import { choice, dialog, showRules, toast } from './ui.ts';
 import { radialPicker } from './radial-picker.ts';
 import { assignTauntSlot, tauntWheelSlots } from './taunt-wheel.ts';
-import { TAUNTS } from '../shared/taunts.ts';
+import { TAUNTS, tauntAudioSrc } from '../shared/taunts.ts';
 import { isAudioMuted, previewTaunt, stopTauntPreview, type Volumes, type VolumeKind } from './sound.ts';
 import { LANG, setLang, spellName, t, type Lang } from './i18n.ts';
 import { isSpell } from '../shared/spells.ts';
@@ -291,7 +291,7 @@ function communicationSection(): Node[] {
     editor.hidden = false;
     editor.replaceChildren(el('h3', {}, t(`Trocar provocação da posição ${position + 1}`, `Change taunt in slot ${position + 1}`)),
       choice(t('Escolha uma provocação', 'Choose a taunt'), TAUNTS.map((x, i) => [i, t(x.text, x.en)]), slots[position], (index) => {
-        void previewTaunt(TAUNTS[index].id).then((ok) => { if (!ok) toast(t('Não foi possível tocar esta provocação.', 'Could not play this taunt.'), 'bad'); });
+        if (tauntAudioSrc(TAUNTS[index].id)) void previewTaunt(TAUNTS[index].id).then((ok) => { if (!ok) toast(t('Não foi possível tocar esta provocação.', 'Could not play this taunt.'), 'bad'); });
         slots = assignTauntSlot(slots, position, index);
         store.set('warlock:taunt-wheel', JSON.stringify(slots));
         wheel.setLabels(labels());
