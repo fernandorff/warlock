@@ -10,6 +10,7 @@ import { add, clampLen, dist, dot, len, norm, scale, sub, v, type Vec } from './
 import { KNOCK_RECOVERY } from './constants.ts';
 import { SHIELD, castBlocked } from './spells.ts';
 import { BASIC_ATTACK, BRACE } from './constants.ts';
+import { healTarget } from './heal-target.ts';
 
 export type Wizard = {
   id: string;
@@ -138,6 +139,7 @@ export type Cmd =
   | { id: string; kind: 'cast'; spell: SpellId; at: Vec }
 
 export type SimEvent =
+  | { k: 'heal'; id: string; x: number; y: number; amount: number }
   | { k: 'attack'; id: string; melee: boolean }
   | { k: 'cast'; id: string; spell: SpellId }
   | { k: 'hit'; id: string; by: string; x: number; y: number; dmg: number; src: string }
@@ -672,7 +674,16 @@ function cast(w: World, wz: Wizard, spell: SpellId, at: Vec) {
   const level = wz.spells[spell];
   if (!level || w.t < wz.cd[spell]) return;
   const L = spellLevel(spell, level);
+  const recipient = spell === 'heal' ? healTarget(w.wizards, wz, at, L.range * wz.rangeF) : undefined;
+  if (spell === 'heal' && !recipient) return;
   wz.cd[spell] = w.t + L.cd;
+  if (recipient) {
+    const before = recipient.hp;
+    heal(w, recipient, L.heal);
+    wz.windUntil = 0;
+    w.events.push({ k: 'heal', id: recipient.id, x: recipient.pos.x, y: recipient.pos.y, amount: recipient.hp - before });
+    return;
+  }
   for (let i = 0; i < (SHOTS[spell] ?? 1); i++) w.events.push({ k: 'fire', id: wz.id, src: spell });
   wz.windUntil = 0; // qualquer magia acaba com a Caminhada no vento (windwalkmodifier.lua)
   // Elo: teleportar ou trocar para fora da arena solta o mago ligado (linkmodifier.lua)
@@ -866,6 +877,8 @@ function beginCast(w: World, wz: Wizard, spell: SpellId, at: Vec) {
     wz.casting = null;
   }
   if (!wz.spells[spell] || w.t < wz.cd[spell]) return;
+  // Alvo inválido não revela o mago nem cancela outra ação.
+  if (spell === 'heal' && !healTarget(w.wizards, wz, at, spellLevel(spell, wz.spells[spell]).range * wz.rangeF)) return;
   wz.basicCasting = undefined; // só uma conjuração válida cancela o ataque em preparo.
   const delay = CAST_POINT[spell];
   const d = sub(at, wz.pos);

@@ -1,5 +1,9 @@
 CRÉDITOS DOS ASSETS (os ícones são CC BY 3.0, com crédito obrigatório, ver "Ícones"; o resto é CC0 / domínio público, créditos por cortesia)
 
+Ícone healing-cross (Curar): cruz geométrica original do projeto, desenhada em SVG no repositório; sem asset externo.
+
+Coral “ooooh” de Curar: síntese original por osciladores/harmônicos/vibrato em src/client/sound.ts; sem gravação, voz de pessoa ou asset externo.
+
 == Modelos 3D ==
 models/decor.glb
   Junção (scripts/assets/merge-decor.mjs) de modelos de:

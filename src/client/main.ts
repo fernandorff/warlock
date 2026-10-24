@@ -36,6 +36,7 @@ import { SANDBOX_START } from './train.ts';
 import { TEAM_NAMES, TOUCH, WATCH_JOIN, askName, banner, createRoomUi, curtain, renderLobby, screen, srcName, toast } from './ui.ts';
 import { botLevel, endResult, playerName, renderWizardState, sandboxVisibility, seatChanges, showHitDamage } from './screen-data.ts';
 import { TAUNTS } from '../shared/taunts.ts';
+import { healTarget } from '../shared/heal-target.ts';
 
 declare const __BRANCH__: string;
 
@@ -65,6 +66,7 @@ const IR_CONFIG = IR.find((p) => p.startsWith('config:'))?.slice(7);
 
 // som de cada magia: as novas reaproveitam os sons que já existem
 const SPELL_SOUND: Record<SpellId, SoundKind> = {
+  heal: 'heal',
   fireball: 'fireball', lightning: 'lightning', homing: 'homing', shield: 'shield', teleport: 'teleport',
   swap: 'teleport', grip: 'lightning', meteor: 'fireball', rush: 'shield', cluster: 'fireball',
   boomerang: 'homing', thrust: 'teleport', gravity: 'homing', rockpillar: 'shield', bouncer: 'lightning',
@@ -380,7 +382,13 @@ function startRoom(code: string, name: string) {
   }
 
   const input = createInput(canvas, {
-    pick: (x, y) => scene.pick(x, y),
+    pick: (x, y, spell) => {
+      if (spell === 'heal') {
+        const id = scene.pickMage(x, y);
+        return interp.latest()?.wizards.find(w => w.id === id)?.pos ?? null;
+      }
+      return scene.pick(x, y);
+    },
     move(to, held = false) {
       if ((myWizard(interp.latest())?.status ?? 0) & BRACING_BIT) return;
       command({ t: 'move', x: to.x, y: to.y, held });
@@ -410,6 +418,13 @@ function startRoom(code: string, name: string) {
       const i = SPELL_IDS.indexOf(spell);
       const mine = room?.players.find((p) => p.id === me);
       if (!mine?.spells[spell]) return toast(t('Você ainda não tem essa magia. Compre na loja.', 'You don’t have that spell yet. Buy it in the shop.'));
+      if (spell === 'heal') {
+        const units = interp.latest()?.wizards.map(w => ({ ...w, team: room?.players.find(p => p.id === w.id)?.team })) ?? [];
+        const self = units.find(w => w.id === me);
+        const target = self && healTarget(units, self, at, SPELLS.heal.levels[mine.spells.heal - 1].range * (1 + itemStats(mine.items).range));
+        if (!target) return toast(t('Selecione você ou um aliado vivo dentro do alcance.', 'Target yourself or a living ally within range.'));
+        at = target.pos;
+      }
       if ((lastSnap?.cd[i] ?? 0) > 0.1 || performance.now() < (justCast.get(spell) ?? 0) || (performance.now() < scourgeUntil && spell !== 'teleport')) return;
       if (spell === 'teleport') scourgeUntil = 0; // o Teleporte cancela o Flagelo em preparo
       // Flagelo em preparo: o servidor ignora outras magias até ele explodir
@@ -421,8 +436,8 @@ function startRoom(code: string, name: string) {
       // conjurando, o mago fica parado e o clique de andar espera a magia sair (o servidor faz o mesmo)
       predict.hold(CAST_POINT[spell]);
       scene.castLocal(me, spell, at);
-      scene.clickMarker(at, true);
-      sound.play(SPELL_SOUND[spell]);
+      if (spell !== 'heal') scene.clickMarker(at, true); // o marcador ofensivo laranja não pertence à cura.
+      if (spell !== 'heal') sound.play(SPELL_SOUND[spell]); // cura toca uma vez, na confirmação e posição do alvo.
       return true;
     },
     center: () => {
@@ -431,7 +446,7 @@ function startRoom(code: string, name: string) {
     },
     zoom: (d) => scene.zoomBy(d),
     pan: (dx, dy) => scene.panBy(dx, dy),
-    armedChanged: (s) => (armed = s),
+    armedChanged: (s) => { armed = s; canvas.style.cursor = s === 'heal' ? 'crosshair' : ''; },
     preview: (s, at) => {
       held = s;
       const from = drawn.get(me);
@@ -575,7 +590,8 @@ function startRoom(code: string, name: string) {
       // controle: vibra ao levar golpe forte e ao morrer
       if (e.k === 'hit' && e.id === me && e.dmg >= 60) rumble(Math.min(1, e.dmg / 160), 200);
       else if (e.k === 'death' && e.id === me) rumble(1, 500);
-      if (e.k === 'cast' && e.id !== me) {
+      if (e.k === 'heal') sound.play('heal', near(e.x, e.y));
+      else if (e.k === 'cast' && e.id !== me && e.spell !== 'heal') {
         sound.play(SPELL_SOUND[e.spell], volumeOf(e.id));
       } else if (e.k === 'hit') sound.play(e.dmg >= 100 ? 'hitHeavy' : e.dmg < 50 ? 'hitLight' : 'hit', near(e.x, e.y));
       else if (e.k === 'pillar') sound.play('hit', near(e.x, e.y) * 0.6);

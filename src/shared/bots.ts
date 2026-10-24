@@ -206,6 +206,12 @@ export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = 
     cmds.push({ id, kind: 'cast', spell, at: turn ? add(me.pos, v(r.x * c - r.y * s, r.x * s + r.y * c)) : at });
     return cmds;
   };
+  if (ready('heal')) {
+    const L = spellLevel('heal', me.spells.heal);
+    const hurt = w.wizards.filter(z => z.alive && ally(z) && z.hpMax - z.hp >= L.heal && dist(z.pos, me.pos) <= L.range * me.rangeF)
+      .sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0];
+    if (hurt) return cast('heal', hurt.pos);
+  }
   // folga da lava que o bot quer aqui (numa ponte ou faixa estreita, o que a pedra deixa; seguindo um caminho estreito,
   // a folga com que o planejou, senão voltaria na boca da ponte); perto da borda não congela
   const fear = Math.max(0.3, Math.min(roomAt(w, me.pos, D.edge), M.route.get(id) ?? Infinity));

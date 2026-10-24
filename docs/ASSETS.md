@@ -8,7 +8,7 @@
 ## Identidade visual
 
 - **Tema:** fantasia sombria de pedra escura, lava e ouro. As cores estão todas nas variáveis do `:root` em [`src/client/style.css`](../src/client/style.css): fundo `--bg #140806`, painéis `--panel`/`--panel2`, lava `--lava #ff6a1a`, brasa `--ember #ffb347`, ouro `--gold #ffd666`, texto `--fg #f7ecdf`. Cor solta no código não entra (regra do `CLAUDE.md`).
-- **Cor por grupo de magia:** Ataque `#ff6b4a`, Mobilidade `#8be36a`, Defesa `#5fb0ff`, Controle `#c58bff`, Itens prateado `--item #c9d4e0`.
+- **Cor por grupo de magia:** Ataque `#ff6b4a`, Mobilidade amarelo `--gold #ffd666`, Defesa `#5fb0ff`, Controle `#c58bff`, Suporte `#8be36a`, Itens prateado `--item #c9d4e0`.
 - **Painéis:** metal envelhecido com borda dourada fina e rebites nos cantos (`--plate`, `--plate-edge`, `--frame`).
 - **Fontes** (Google Fonts, carregadas no `index.html`): títulos em **Grenze** (`--display`), texto em **Alegreya Sans**. O W da logo usa a Grenze Gotisch, só desenhada no SVG.
 - **3D:** low-poly do **KayKit** (cores chapadas com uma textura de paleta pequena), vista de cima como no Dota. Modelo novo deve ser KayKit ou do mesmo estilo; os packs `legado-*` são de uma fase mais antiga do KayKit e destoam um pouco.
@@ -18,8 +18,11 @@
 
 ## No jogo (`public/`)
 
+Curar (teste local24/10): coral “ooooh” original sintetizado em `src/client/sound.ts`, três vozes com harmônicos, vibrato e envelope suave; sem gravação externa. Aura verde em `scene.ts`/`heal-fx.ts` reutiliza anel e partículas Kenney já creditadas. A demo usa a mesma duração/cor. Nivelamento e volumes existentes preservados.
+
 | Arquivo | O que é | Onde é usado | Origem e licença |
 |---|---|---|---|
+| `icons.svg#healing-cross` | cruz geométrica de Curar | `src/client/icons.ts`; regenerada em `scripts/assets/build-icons.mjs` | geometria original do projeto, sem asset externo |
 | `models/mage.glb`, `knight`, `barbarian`, `rogue`, `rogue_hooded`, `skeleton_mage`, `skeleton_minion`, `skeleton_rogue`, `skeleton_warrior` | os 9 bonecos (1 MB cada), com 21 animações | `src/client/scene.ts` (`/models/${id}.glb`), lista em `src/shared/characters.ts` | KayKit Adventurers e Skeletons, CC0; cortados por `scripts/slim-character.mjs`, capuz por `scripts/assets/hood.mjs` |
 | `models/KAYKIT-LICENSE.txt`, `KAYKIT-SKELETONS-LICENSE.txt` | licenças dos bonecos | — | KayKit, CC0 |
 | `desktop/icon.png` (fora de `public/`) | ícone do app e do instalador para Windows | `desktop/package.json` (`build.win.icon`; o electron-builder converte para o ícone do `.exe`) | gerado do `public/warlock-wars.svg` (o W da aba) em 512×512, recortado em círculo transparente; arte do projeto |

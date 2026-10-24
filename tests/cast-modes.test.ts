@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InputHandlers } from '../src/client/input.ts';
-import { setCastMode, setSlotMode } from '../src/client/keys.ts';
+import { setCastMode, setSlotMode, setKey } from '../src/client/keys.ts';
 import type { Vec } from '../src/shared/vec.ts';
 
 // janela e canvas de mentira: só guardam os ouvintes para disparar eventos à mão (os testes rodam sem navegador)
@@ -17,13 +17,14 @@ let ok = true; // false: a magia não sai (recarga ou sem a magia)
 let preview: string | null = null;
 let previewAt: Vec | undefined;
 let armed: string | null = null;
-let input: { setEnabled: (on: boolean) => void };
+let emptyTarget = false;
+let input: { setEnabled: (on: boolean) => void; button: (s: 'heal') => void };
 
 beforeAll(async () => {
   Object.assign(globalThis, { addEventListener: on(win), innerWidth: 800, innerHeight: 600 });
   const { createInput } = await import('../src/client/input.ts');
   const h: InputHandlers = {
-    pick: (x, y): Vec => ({ x, y }),
+    pick: (x, y, spell): Vec | null => spell === 'heal' && emptyTarget ? null : ({ x, y }),
     move: (to) => log.push(`move ${to.x},${to.y}`),
     stop: () => log.push('stop'),
     brace: (on) => log.push(`brace ${on}`),
@@ -43,6 +44,7 @@ beforeAll(async () => {
   setSlotMode(false); // Q = Bola de fogo
 });
 beforeEach(() => {
+  emptyTarget = false; ok = true;
   log = [];
   key('keydown', 'Escape');
   preview = armed = null;
@@ -50,6 +52,39 @@ beforeEach(() => {
 });
 
 describe('jeitos de lançar no PC', () => {
+  it.each(['quick', 'release', 'click'] as const)('Curar exige clique no alvo, mesmo em%s', mode => {
+    setKey('heal', 'KeyH'); setCastMode(mode);
+    key('keydown', 'KeyH'); key('keyup', 'KeyH');
+    expect(log).toEqual([]);
+    expect(armed).toBe('heal');
+    click(0, 40, 50); click(0, 60, 70);
+    expect(log.filter(s=>s.startsWith('cast '))).toEqual(['cast heal 40,50']); // clique neutro segue a regra da base; não repete a cura.
+    expect(armed).toBeNull();
+    setKey('heal', '');
+  });
+  it('Curar ignora chão e mantém seleção após alvo recusado; direito cancela mesmo sobre chão', () => {
+    input.button('heal'); emptyTarget = true;
+    click(0); expect(log).toEqual([]); expect(armed).toBe('heal');
+    emptyTarget = false; ok = false;
+    click(0); expect(armed).toBe('heal');
+    emptyTarget = true; click(2, 70, 80);
+    expect(armed).toBeNull(); expect(log.at(-1)).toBe('move 70,80');
+  });
+  it.each(['Escape', 'KeyS', 'KeyQ'])('%s cancela Curar escolhida sem autocura posterior', code => {
+    setCastMode('quick'); input.button('heal');
+    key('keydown', code); key('keyup', code); click(0);
+    expect(log.some(s => s.startsWith('cast heal'))).toBe(false);
+    expect(armed).toBeNull();
+    if (code === 'KeyS') key('keyup', 'KeyS');
+  });
+  it('escolher Curar cancela magia segurada sem dispará-la ao soltar', () => {
+    setKey('heal', 'KeyH'); setCastMode('release');
+    key('keydown', 'KeyQ'); key('keydown', 'KeyH');
+    key('keyup', 'KeyQ'); key('keyup', 'KeyH');
+    expect(log).toEqual([]); expect(armed).toBe('heal');
+    setKey('heal', '');
+  });
+
   it('S para uma vez, renova a defesa e libera ao soltar', () => {
     vi.useFakeTimers();
     key('keydown', 'KeyS');

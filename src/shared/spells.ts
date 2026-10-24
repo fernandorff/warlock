@@ -1,7 +1,7 @@
 import { FRICTION, KB_PER_DMG, UNIT, WIZ_SPEED } from './constants.ts';
 
 export const SPELL_IDS = ['fireball', 'lightning', 'homing', 'shield', 'teleport', 'swap', 'grip', 'meteor', 'rush', 'cluster', 'boomerang', 'thrust', 'gravity', 'rockpillar', 'bouncer',
-  'drain', 'snowball', 'illusion', 'magnetize', 'recharge', 'alteration', 'link', 'windwalk', 'splitter', 'warpzone', 'scourge', 'pact'] as const;
+  'drain', 'snowball', 'illusion', 'magnetize', 'recharge', 'alteration', 'link', 'windwalk', 'splitter', 'warpzone', 'scourge', 'pact', 'heal'] as const;
 export type SpellId = (typeof SPELL_IDS)[number];
 export const isSpell = (x: unknown): x is SpellId => SPELL_IDS.includes(x as SpellId);
 // 8 magias por mago nas teclas 1 2 3 4 Q W E R (decisão do Fernando, 21/10, issue #217; antes 6); a Bola de fogo e o Flagelo contam
@@ -13,6 +13,7 @@ export const SPELL_GROUP_IDS = {
   mobility: ['teleport', 'swap', 'rush', 'thrust', 'windwalk'],
   defense: ['shield', 'alteration', 'warpzone', 'rockpillar', 'illusion'],
   control: ['grip', 'gravity', 'link', 'magnetize', 'drain'],
+  support: ['heal'],
 } as const satisfies Record<string, readonly SpellId[]>;
 export type SpellGroup = keyof typeof SPELL_GROUP_IDS;
 export const SHIELD = { statusDuration: .6, knock: .6 }; // proposta: reduz novos status/impulsos em40%, nunca recalcula os anteriores.
@@ -22,14 +23,14 @@ export const spellGroup = (s: SpellId) => (Object.keys(SPELL_GROUP_IDS) as Spell
 
 // radius: raio da explosão do Meteoro (e do dano da Gravidade); dmgMin: dano na borda dele; absorb: dano que a Investida converte em velocidade;
 // pull: puxão da Gravidade nos magos (m/s²); scale: tempo dos projéteis inimigos na Zona de dobra; dot: dano por segundo da Bola de neve encostada
-export type Level = { cd: number; dmg: number; knock: number; speed: number; range: number; duration: number; radius: number; dmgMin: number; absorb: number; pull: number; scale: number; dot: number };
+export type Level = { cd: number; dmg: number; heal: number; knock: number; speed: number; range: number; duration: number; radius: number; dmgMin: number; absorb: number; pull: number; scale: number; dot: number };
 type Spell = { name: string; en: string; cost: number; up: number[]; levels: Level[] };
 
 export const MAX_SPELL_LEVEL = 7;
 
 // os 7 níveis do original (npc_abilities_custom.txt e npc_items_custom.txt); dano na escala de vida 1000 (a do original), distâncias em metros (UNIT)
 // kbf = fator de empurrão da magia no original (o raio empurra 0,92 do normal)
-const L = ({ kbf = 1, ...l }: Partial<Level> & { kbf?: number }): Level => ({ cd: 0, dmg: 0, speed: 0, range: 0, duration: 0, radius: 0, dmgMin: 0, absorb: 0, pull: 0, scale: 0, dot: 0, ...l, knock: (l.dmg ?? 0) * KB_PER_DMG * kbf });
+const L = ({ kbf = 1, ...l }: Partial<Level> & { kbf?: number }): Level => ({ cd: 0, dmg: 0, heal: 0, speed: 0, range: 0, duration: 0, radius: 0, dmgMin: 0, absorb: 0, pull: 0, scale: 0, dot: 0, ...l, knock: (l.dmg ?? 0) * KB_PER_DMG * kbf });
 const zip = (a: number[], b: number[]) => a.map((x, i) => [x, b[i]]);
 const steps = (from: number, by: number) => Array.from({ length: MAX_SPELL_LEVEL }, (_, i) => Math.round((from + by * i) * 100) / 100);
 
@@ -89,6 +90,8 @@ export const SPELLS: Record<SpellId, Spell> = {
   scourge: { name: 'Flagelo', en: 'Scourge', cost: 0, up: [7, 7, 7, 7, 7, 7], levels: steps(80, 10).map((d) => L({ cd: 5, dmg: d, radius: 325 * UNIT })) },
   // Pacto: a próxima magia de dano em `duration` s sai PACT.mult× mais forte; a subida só encurta a recarga
   pact: { name: 'Pacto', en: 'Pact', cost: 10, up: [6, 7, 8, 9, 10, 11], levels: steps(20, -1).map((cd) => L({ cd, duration: 5 })) },
+  // Cura/recarga/alcance definidos pelo usuário; custo comum provisório para o teste local, sem balanceamento de publicação.
+  heal: { name: 'Curar', en: 'Heal', cost: 12, up: [6, 7, 8, 9, 10, 11], levels: steps(45, 6).map((heal, i) => L({ heal, cd: 20 - i, range: 10 })) },
 };
 
 // agarrar (ideia do Fernando, 18/10): o preso fica no lugar até o primeiro golpe com dano (ou o fim do tempo), e esse golpe
@@ -152,7 +155,7 @@ export const SPLITTER = { spawnSpeed: 250 * UNIT, spawnLife: 0.48, waves: 4, chi
 // tempo de conjuração: a magia sai esse tempo depois da tecla (AbilityCastPoint do original era 0,2 s)
 export const CAST_POINT: Record<SpellId, number> = { fireball: 0.1, lightning: 0.1, homing: 0.1, shield: 0, teleport: 0, swap: 0, grip: 0.1, meteor: 0.1, rush: 0, cluster: 0.1, boomerang: 0.1, thrust: 0, gravity: 0.1, rockpillar: 0, bouncer: 0.1,
   drain: 0.1, snowball: 0.1, illusion: 0, magnetize: 0.1, recharge: 0.1, alteration: 0, link: 0.1, windwalk: 0, splitter: 0, warpzone: 0.1,
-  scourge: 0.5, pact: 0.1 }; // Flagelo: o preparo de 0,5 s do item (0,9 s no original; Fernando, 17/10) // Alteração, Caminhada e Divisor: 0 no original; Ilusão 0 (defesa, como o Escudo) // original 0,2 s (Estocada 0); 0,1 s a pedido do Fernando (17/10)
+  scourge: 0.5, pact: 0.1, heal: 0 }; // Curar instantânea para o teste local; Flagelo mantém seu preparo.
 
 export const spellLevel = (id: SpellId, level: number): Level => SPELLS[id].levels[Math.max(1, Math.min(MAX_SPELL_LEVEL, level)) - 1];
 

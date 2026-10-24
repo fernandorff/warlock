@@ -4,6 +4,8 @@ Vale junto com o `CLAUDE.md` da raiz.
 
 ## Interface
 
+- Curar: tecla/barra seleciona e clique no modelo confirma, independente de modo Rápido/Ao soltar. Sem fallback do chão; inválido mantém seleção, Esc/S/direito cancelam. Aura verde1,5s e coral sintetizado original tocam no evento confirmado, respeitando mixer/distância. PT/EN/ficha/demo/ícone próprio acompanham stats.
+
 - Categoria Suporte/Support vazia no catálogo, verde anterior de Mobilidade; Mobilidade amarela. searchFilter aceita keepEmpty para preservar categoria vazia sem pesquisa, respeitando o filtro. Aprender/loja/Grimório usam o catálogo comum; magias futuras entram em PRs próprias.
 
 - **DOM sempre com `el(tag, props, ...filhos)`** de `icons.ts` (`on*` vira listener, `class` vira `className`, filho `null`/`false` some). Não crie outro helper de DOM. Ícones: `icon(id)` com `ICON`, `ITEM_ICON`, `UI_ICON`.

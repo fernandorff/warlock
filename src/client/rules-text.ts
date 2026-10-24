@@ -309,6 +309,7 @@ export const RULES = LANG === 'en' ? RULES_EN : RULES_PT;
 // grimório: como usar cada magia e contra o quê ela funciona (lido do comportamento em shared/sim.ts)
 type SpellTips = Record<SpellId, [use: string, vs: string]>;
 const SPELL_TIPS_PT: SpellTips = {
+  heal: ['Aperte a tecla de Curar e clique com o botão esquerdo em você ou num aliado vivo dentro do alcance. Aura verde e coral curto confirmam a cura. Esc, S ou botão direito cancelam.', 'Atordoamento impede a conjuração. Não cura inimigos nem revive mortos; não causa dano nem empurrão.'],
   fireball: ['Mire um pouco à frente de quem anda. Perto da borda, um acerto já joga na lava.', 'O Escudo devolve; Teleporte e Troca escapam. Eletrocutar destrói a bola no ar e duas bolas que se chocam viram chão em chamas.'],
   lightning: ['Instantâneo: quica sem repetir alvos por lançamento, com alcance fixo e 50% menos dano e empurrão por salto. Por 2 s, aplica lentidão de 25% e Incapacitar: pausa recargas, sem impedir habilidades prontas. Destrói projéteis no trajeto.', `Obstáculos bloqueiam; o Escudo devolve a descarga para você e encerra a cadeia. Alcance de ${n1(L1('lightning').range)} m por trecho no nível 1. Outro lançamento pode acertar os mesmos alvos.`],
   homing: ['Bom contra quem foge e desvia: mire perto do alvo, ele persegue o inimigo mais perto da mira.', 'O Escudo devolve e ele passa a perseguir você; obstáculos o param. Com uma Bola de fogo inimiga, vira chão lento.'],
@@ -339,6 +340,7 @@ const SPELL_TIPS_PT: SpellTips = {
 };
 
 const SPELL_TIPS_EN: SpellTips = {
+  heal: ['Press Heal, then left-click yourself or a living ally within range. A green aura and a short choir confirm healing. Esc, S or right-click cancels.', 'Stun prevents casting. Cannot heal enemies or revive the dead; deals no damage or knockback.'],
   fireball: ['Aim a little ahead of anyone who is moving. Near the edge, one hit already sends them into the lava.', 'The Shield reflects it; Teleport and Swap escape it. Electrocute destroys the ball in the air and two balls that collide become burning ground.'],
   lightning: ['Instant: jumps without repeating targets per cast, with fixed range and 50% less damage and knockback per jump. For 2 s, applies 25% slow and Incapacitate: pauses cooldowns without blocking ready abilities. Destroys projectiles along its path.', `Obstacles block it; Shield sends the bolt back at you and ends the chain. Range per segment: ${n1(L1('lightning').range)} m at level 1. A new cast can hit the same targets again.`],
   homing: ['Good against anyone who runs and dodges: aim near the target, it chases the enemy closest to your aim.', 'The Shield reflects it and it starts chasing you; obstacles stop it. With an enemy Fireball, it becomes slow ground.'],
@@ -391,14 +393,14 @@ const SPELL_GROUPS_PT: SpellGroups = [
   ['Mobilidade', 'sair do lugar', [...G.mobility]],
   ['Defesa', 'parar o que vem', [...G.defense]],
   ['Controle', 'prender, puxar, atrasar', [...G.control]],
-  ['Suporte', 'sem magias por enquanto', []],
+  ['Suporte', 'cura e ajuda aos aliados', [...G.support]],
 ];
 const SPELL_GROUPS_EN: SpellGroups = [
   ['Attack', 'damage and knockback', [...G.attack]],
   ['Mobility', 'get out of the way', [...G.mobility]],
   ['Defense', 'stop what is coming', [...G.defense]],
   ['Control', 'grip, pull, slow', [...G.control]],
-  ['Support', 'no spells yet', []],
+  ['Support', 'healing and helping allies', [...G.support]],
 ];
 export { SPELL_GROUPS_EN, SPELL_GROUPS_PT };
 export const SPELL_GROUPS = LANG === 'en' ? SPELL_GROUPS_EN : SPELL_GROUPS_PT;
@@ -415,6 +417,7 @@ export const ITEM_GROUPS = LANG === 'en' ? ITEM_GROUPS_EN : ITEM_GROUPS_PT;
 
 // para que serve, em uma linha (cartão da loja)
 const SPELL_USE_PT: Record<SpellId, string> = {
+  heal: 'Cura você ou um aliado.',
   fireball: 'Ataque básico: empurra de longe.',
   lightning: 'Acerta na hora e quica sem repetir inimigo no mesmo lançamento. Alcance fixo; cada salto perde 50% do dano e empurrão. Por 2 s: lentidão de 25% e Incapacitar (pausa recargas, sem bloquear habilidades prontas). Destrói projéteis no caminho.',
   homing: 'Persegue quem foge ou desvia.',
@@ -444,6 +447,7 @@ const SPELL_USE_PT: Record<SpellId, string> = {
   pact: 'Dobra o próximo golpe de dano.',
 };
 const SPELL_USE_EN: Record<SpellId, string> = {
+  heal: 'Heals you or an ally.',
   fireball: 'Basic attack: knocks back from afar.',
   lightning: 'Hits instantly and jumps without repeating enemies in the same cast. Fixed range; each jump loses 50% of damage and knockback. For 2 s: 25% slow and Incapacitate (pauses cooldowns without blocking ready abilities). Destroys projectiles along its path.',
   homing: 'Chases anyone who flees or dodges.',
@@ -476,6 +480,7 @@ export { SPELL_USE_EN, SPELL_USE_PT };
 export const SPELL_USE = LANG === 'en' ? SPELL_USE_EN : SPELL_USE_PT;
 
 const RULES_SHORT_PT: Record<SpellId, string> = {
+  heal: `Selecione Curar pela tecla ou pela barra e clique com o botão esquerdo no corpo do alvo (point and click), mesmo no modo Rápido/Ao soltar. Cura instantaneamente ${n1(L1('heal').heal)} de vida em você ou um aliado a até ${n1(L1('heal').range)} m, sem ultrapassar a vida máxima. +6 de cura e −1 s de recarga por nível (20→14 s). Não cura inimigos, cópias ou mortos; clicar no chão não lança. Segue modificadores gerais de cura e alcance.`,
   fireball: 'Projétil reto. Dano e empurrão médios.',
   lightning: 'Instantâneo. Do primeiro mago na linha, quica para inimigos próximos sem repetir alvo no mesmo lançamento e sem limite fixo de saltos. Alcance fixo; cada salto conserva 50% do dano e empurrão anteriores. Por 2 s: efeito elétrico, lentidão de 25% e Incapacitar, que pausa recargas sem impedir habilidades prontas. Outro lançamento pode acertar os mesmos alvos. Destrói projéteis no trajeto.',
   homing: `Persegue por ${n1(L1('homing').duration)} s o inimigo mais perto da mira, virando devagar.`,
@@ -505,6 +510,7 @@ const RULES_SHORT_PT: Record<SpellId, string> = {
   pact: `A próxima magia de dano em ${n1(L1('pact').duration)} s faz ${n1(PACT.mult)}× de dano e empurrão.`,
 };
 const RULES_SHORT_EN: Record<SpellId, string> = {
+  heal: `Select Heal using its key or the spell bar, then left-click the target's body (point and click), even in Quick/On release mode. Instantly restores ${n1(L1('heal').heal)} health to yourself or an ally within ${n1(L1('heal').range)} m, up to their maximum health. +6 healing and −1 s cooldown per level (20→14 s). Cannot heal enemies, copies or dead units; clicking the ground does not cast. Uses general healing and range modifiers.`,
   fireball: 'Straight projectile. Medium damage and knockback.',
   lightning: 'Instant. From the first wizard in line, jumps to nearby enemies without repeating targets in the same cast or a fixed jump limit. Fixed range; each jump keeps 50% of the previous damage and knockback. For 2 s: electrical effect, 25% slow and Incapacitate, which pauses cooldowns without blocking ready abilities. A new cast can hit the same targets. Destroys projectiles along its path.',
   homing: `Chases the enemy closest to your aim for ${n1(L1('homing').duration)} s, turning slowly.`,

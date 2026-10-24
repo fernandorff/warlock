@@ -5,7 +5,7 @@ import { audioLevel, layerVolume } from './audio-level.ts';
 import { store } from './store.ts';
 
 export type SoundKind = 'fireball' | 'lightning' | 'homing' | 'shield' | 'teleport' | 'hit' | 'hitLight' | 'hitHeavy' | 'reflect' | 'death' | 'splash' | 'shrink' | 'beep' | 'go' | 'click'
-  | 'winRound' | 'loseRound' | 'buy' | 'error' | 'ready' | 'hover' | 'brace';
+  | 'winRound' | 'loseRound' | 'buy' | 'error' | 'ready' | 'hover' | 'brace' | 'heal';
 
 const FILES: Partial<Record<SoundKind, string[]>> = {
   brace: ['brace_whoosh_trial'],
@@ -85,7 +85,7 @@ export function createSound(musicDefault?: number) {
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
       // Pré-renderiza a síntese fora do caminho de reprodução para medi-la pelo mesmo critério dos arquivos.
       if (typeof OfflineAudioContext !== 'undefined') {
-        const kinds: SoundKind[] = ['fireball', 'lightning', 'homing', 'shield', 'teleport', 'hit', 'hitLight', 'hitHeavy', 'reflect', 'death', 'splash', 'shrink', 'beep', 'go', 'click', 'winRound', 'loseRound', 'buy', 'error', 'ready', 'hover'];
+        const kinds: SoundKind[] = ['fireball', 'lightning', 'homing', 'shield', 'teleport', 'hit', 'hitLight', 'hitHeavy', 'reflect', 'death', 'splash', 'shrink', 'beep', 'go', 'click', 'winRound', 'loseRound', 'buy', 'error', 'ready', 'hover', 'heal'];
         for (const kind of kinds) {
           const offline = new OfflineAudioContext(1, ctx.sampleRate * 2, ctx.sampleRate);
           synth(kind, 1, offline, offline.destination);
@@ -173,6 +173,29 @@ export function createSound(musicDefault?: number) {
     const playTone = (type: OscillatorType, f0: number, f1: number, dur: number, gain: number, at = 0) => toneAt(type, f0, f1, dur, gain, at, c, output);
     const playHiss = (type: BiquadFilterType, f0: number, f1: number, dur: number, gain: number, at = 0) => hissAt(type, f0, f1, dur, gain, at, c, output);
       switch (kind) {
+        // Harmônicos arredondados, ataque suave e vibrato imitam um coral em “ooooh”, sem gravação externa.
+        case 'heal':
+          [261.63, 329.63, 392].forEach((note, voice) => {
+            [1, 2, 3, 7].forEach((harmonic, i) => {
+              const at = c.currentTime + voice * .03;
+              const o = c.createOscillator(), vibrato = c.createOscillator();
+              const depth = c.createGain(), envelope = c.createGain();
+              o.type = vibrato.type = 'sine';
+              o.frequency.setValueAtTime(note * harmonic, at);
+              vibrato.frequency.setValueAtTime(5.2 + voice * .17, at);
+              depth.gain.value = harmonic * 1.2;
+              vibrato.connect(depth).connect(o.frequency);
+              const gain = [.065, .022, .008, .0015][i] * v;
+              envelope.gain.setValueAtTime(.0001, at);
+              envelope.gain.exponentialRampToValueAtTime(Math.max(.0001, gain), at + .18);
+              envelope.gain.exponentialRampToValueAtTime(Math.max(.0001, gain * .85), at + .65);
+              envelope.gain.exponentialRampToValueAtTime(.0001, at + 1.6);
+              o.connect(envelope).connect(output);
+              o.start(at); vibrato.start(at);
+              o.stop(at + 1.65); vibrato.stop(at + 1.65);
+            });
+          });
+          break;
         case 'brace': break; // não voltar à síntese recusada se a gravação ainda não carregou.
         case 'fireball': playHiss('lowpass', 2400, 300, 0.45, 0.5 * v); playTone('sawtooth', 160, 60, 0.3, 0.08 * v); break;
         case 'lightning': playHiss('highpass', 3000, 800, 0.25, 0.7 * v); playTone('square', 900, 120, 0.18, 0.08 * v); break;

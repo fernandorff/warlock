@@ -32,6 +32,8 @@ for (const path of ICONS) {
   const inner = svg.replace(/^[\s\S]*?<svg[^>]*>|<\/svg>\s*$/g, '').replace('<path d="M0 0h512v512H0z"/>', '').replace(/ fill="#fff"/g, '');
   symbols.push(`<symbol id="${path.split('/')[1]}" viewBox="0 0 512 512">${inner}</symbol>`);
 }
+// Cruz geométrica própria: Curar não precisa baixar outro asset.
+symbols.push('<symbol id="healing-cross" viewBox="0 0 512 512"><path d="M208 64h96v144h144v96H304v144h-96V304H64v-96h144z"/></symbol>');
 const ids = symbols.map((s) => s.match(/id="([^"]+)"/)[1]);
 if (new Set(ids).size !== ids.length) throw new Error('id repetido no sprite');
 writeFileSync(new URL('../../public/icons.svg', import.meta.url), `<svg xmlns="http://www.w3.org/2000/svg">\n${symbols.join('\n')}\n</svg>\n`);

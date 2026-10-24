@@ -4,6 +4,8 @@ Vale junto com o `CLAUDE.md` da raiz.
 
 ## Simulação
 
+- Curar/Heal: Suporte, alvo próprio/aliado vivo com time não nulo;45+6/nível de cura, alcance10m, CD20−1s/nível, usa teto/modificadores gerais. Alvo inválido não gasta CD/cancela/revela. Conjuração instantânea, custo12/up6→11 conforme teste local aceito pelo solicitante.
+
 - IA sob véu da Ilusão: ready/free recusam qualquer conjuração até veilUntil; movimento permanece permitido. Humanos conservam a regra de se revelar ao usar outra magia. Isso não declara resolvido risco residual Ilusão×Flagelo ao reviver.
 
 - Nomes dos bots: catálogo de sete nomes escolhido pelo usuário, mesma ordem na sala e na partida; não muda IA nem balanceamento.

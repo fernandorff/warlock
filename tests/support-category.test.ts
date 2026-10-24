@@ -7,11 +7,11 @@ const { readFileSync } = await import('node:fs' as string) as { readFileSync(pat
 const css = readFileSync(new URL('../src/client/style.css', import.meta.url), 'utf8');
 
 describe('categoria Suporte', () => {
-  it('começa vazia em português e inglês, sem mover ou duplicar as demais magias', () => {
+  it('contém Curar em português e inglês, sem mover ou duplicar as demais magias', () => {
     for (const [groups, name] of [[SPELL_GROUPS_PT, 'Suporte'], [SPELL_GROUPS_EN, 'Support']] as const) {
       expect(groups).toHaveLength(5);
       expect(groups[4][0]).toBe(name);
-      expect(groups[4][2]).toEqual([]);
+      expect(groups[4][2]).toEqual(['heal']);
       expect(groups.flatMap(([, , ids]) => ids).sort()).toEqual([...SPELL_IDS].sort());
       expect(groups[1][2]).toEqual(SPELL_GROUP_IDS.mobility);
       expect(groups[2][2]).toEqual(SPELL_GROUP_IDS.defense);

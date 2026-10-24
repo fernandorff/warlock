@@ -38,6 +38,7 @@ export function knockDistance(dmg: number, knock: number): number {
 const knockMeters = (l: Level) => m(knockDistance(l.dmg, l.knock));
 // todo campo do nível que muda o jogo tem uma linha (o teste confere)
 export const SPELL_ROWS: Record<SpellId, Row[]> = {
+  heal: [[t('Cura', 'Healing'), l => n1(l.heal)], [CD, l => s(l.cd)], [RANGE, l => m(l.range)]],
   fireball: [[DMG, (l) => n1(l.dmg)], [KNOCK, (l) => knockMeters(l)], [CD, (l) => s(l.cd)], [RANGE, (l) => m(l.range)]],
   lightning: [[DMG, (l) => n1(l.dmg)], [KNOCK, (l) => knockMeters(l)], [CD, (l) => s(l.cd)], [RANGE, (l) => m(l.range)]],
   homing: [[DMG, (l) => n1(l.dmg)], [KNOCK, (l) => knockMeters(l)], [CD, (l) => s(l.cd)], [t('Tempo de voo', 'Flight time'), (l) => s(l.duration)]],

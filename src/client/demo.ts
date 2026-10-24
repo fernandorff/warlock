@@ -8,6 +8,7 @@ import { CAST_POINT, GRIP, METEOR_DELAY, SHIELD, isSpell, noSpells, spellLevel, 
 import { add, scale, v, type Vec } from '../shared/vec.ts';
 import { LOCALE, spellName, t } from './i18n.ts';
 import { electroPulse } from './screen-data.ts';
+import { HEAL_FX, healAura } from './heal-fx.ts';
 
 // alvo do passo: ponto fixo ou a posição atual do mago com esse índice
 type At = Vec | number;
@@ -27,6 +28,8 @@ const VINE_COLOR = '#8ed64b';
 
 // mago 0 é "você" (com a magia ou o item da página); 1 e 2 são de treino e só têm a Bola de fogo
 export const SCRIPTS: Partial<Record<DemoId, Script>> = {
+  heal: { pos: [v(-3, 0), v(2, 0), v(2, 2)], end: 3, steps: [[.4, A, 'heal', B], [1.4, B, 'heal', B]],
+    prep: w => { w.pillars = []; w.wizards[A].team = w.wizards[B].team = 0; w.wizards[C].team = 1; w.wizards[B].spells.heal = 1; for (const z of w.wizards) { z.hp = 700; z.regen = 0; } } },
   knockback: { pos: [v(-3, 0), v(0, 0)], end: 3.5, steps: [[.4, A, 'fireball', B], [.85, B, 'move', v(0, 4)]], prep: (w) => { w.pillars = []; } },
   basic: { pos: [v(-2, 0), v(-1, 0), v(4, 0)], end: 3.5, steps: [[.4, A, 'basic', B], [1.8, A, 'basic', C]], prep: (w) => { w.pillars = []; } },
   // Renova o mesmo comando da partida: o preparo e a pausa vêm da simulação, não de uma animação inventada.
@@ -176,7 +179,7 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
         continue;
       }
       demoStep(s);
-      for (const e of s.events) fx.push({ e, until: s.w.t + (e.k === 'hit' ? 0.8 : e.k === 'vines' ? .7 : e.k === 'clash' || e.k === 'scourge' ? 0.5 : 0.3) });
+      for (const e of s.events) fx.push({ e, until: s.w.t + (e.k === 'heal' ? HEAL_FX.seconds : e.k === 'hit' ? 0.8 : e.k === 'vines' ? .7 : e.k === 'clash' || e.k === 'scourge' ? 0.5 : 0.3) });
     }
     fx = fx.filter((f) => f.until > s.w.t);
     draw();
@@ -262,7 +265,15 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
     });
     for (const { e, until } of fx) {
       const life = until - w.t;
-      if (e.k === 'lightning') line(e.from, e.to, '#cfe8ff', 0.09);
+      if (e.k === 'heal') {
+        const aura = healAura(until, w.t), at = w.wizards.find(z => z.id === e.id)?.pos ?? v(e.x, e.y);
+        ctx.globalAlpha = aura.opacity;
+        circle(at, WIZ_R * aura.scale, HEAL_FX.color, HEAL_FX.glow);
+        ctx.globalAlpha = 1;
+        text('+' + Math.round(e.amount), v(at.x, at.y - 1.1 - (HEAL_FX.seconds - life) * .5), HEAL_FX.color, .42);
+        text(t('clique no alvo', 'click target'), v(at.x, at.y + .9), HEAL_FX.color, .3);
+      }
+      else if (e.k === 'lightning') line(e.from, e.to, '#cfe8ff', 0.09);
       else if (e.k === 'vines') {
         circle(v(e.x, e.y), e.r, null, VINE_COLOR);
         ctx.globalAlpha = Math.min(1, life / .3);
