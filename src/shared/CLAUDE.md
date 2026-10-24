@@ -4,6 +4,8 @@ Vale junto com o `CLAUDE.md` da raiz.
 
 ## Simulação
 
+- Corpo fechado em Defesa: exige Manter base ativo, termina ao soltar S ou no limite3,5+0,75s/nível. Reduz dano, novas durações negativas e novos impulsos em90%; nunca imunidade nem limpeza retroativa. Expirar mantendo S preserva Manter base.
+
 - Gêiser: alvo no chão até10m, área25% menor (raio1,5×√0,75), dura2,5s e suspende qualquer unidade viva atingida; invulnerável, imóvel e sem ações. Projéteis passam sob corpos suspensos, sem exceção entre magias.
 
 - Curar/Heal: Suporte, alvo próprio/aliado vivo com time não nulo;45+6/nível de cura, alcance10m, CD20−1s/nível, usa teto/modificadores gerais. Alvo inválido não gasta CD/cancela/revela. Conjuração instantânea, custo12/up6→11 conforme teste local aceito pelo solicitante.

@@ -861,7 +861,7 @@ export function tickMatch(m: Match, now: number, cmds: Cmd[], rand: () => number
 // jeito de jogar (só mede, sem sorteio: a partida segue igual): ameaça = projétil inimigo que vai passar perto em até 0,6 s (o mesmo
 // critério dos bots, vendo tudo); reação = primeira defesa em até 1 s (magia de defesa ou andar para fora da linha do tiro);
 // atingido = levou dano do dono do projétil em até 1 s. Chave 'projétil>vítima'; sai quando o projétil some
-const DEFENSE: SpellId[] = ['shield', 'teleport', 'rush', 'windwalk', 'alteration', 'warpzone', 'rockpillar', 'illusion'];
+const DEFENSE: SpellId[] = ['closedbody', 'shield', 'teleport', 'rush', 'windwalk', 'alteration', 'warpzone', 'rockpillar', 'illusion'];
 type Threat = { at: number; p: Projectile; owner: string; reacted: boolean; struck: boolean };
 const watched = new WeakMap<World, Map<string, Threat>>();
 function watchStyle(m: Match, w: World, all: Cmd[]) {

@@ -32,7 +32,7 @@ describe('gravação do aviso de Manter base', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     sound.play(kind);
     {
-      expect(fetch.mock.calls.some(([src]) => src === '/sfx/brace_whoosh_trial.mp3')).toBe(true);
+      expect(fetch.mock.calls.some(([src]) => src === '/sfx/brace_activation.mp3')).toBe(true);
       expect(fetch.mock.calls.some(([src]) => src === '/sfx/sonic_boom.mp3')).toBe(false);
       expect(oscillators).toHaveLength(0); // aviso usa gravação real, não a síntese recusada.
       expect(sources).toHaveLength(1);

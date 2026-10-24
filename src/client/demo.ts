@@ -24,11 +24,15 @@ const RULES = { runes: false, sudden: false, chests: false };
 // O roteiro espera os cipós reais antes de tentar andar e deixa a prisão visível antes do golpe que solta.
 const GRIP_CAST_AT = .4;
 const GRIP_ROOT_AT = GRIP_CAST_AT + CAST_POINT.grip + GRIP.delay;
+const CLOSED_BODY_END = .8 + spellLevel('closedbody', 1).duration; // demo acompanha o prazo real do nível1.
 // verde dos cipós do Agarrar: a marca no chão, o anel de quem está preso e as folhas
 const VINE_COLOR = '#8ed64b';
 
 // mago 0 é "você" (com a magia ou o item da página); 1 e 2 são de treino e só têm a Bola de fogo
 export const SCRIPTS: Partial<Record<DemoId, Script>> = {
+  closedbody: { pos: [v(-1,0), v(3,0)], end: CLOSED_BODY_END + 2,
+    steps: ([...Array.from({length:Math.ceil((CLOSED_BODY_END+1.1)/.1)}, (_,i): Step => [.1+i*.1,A,'braceOn',A]), [.8,A,'closedbody',A], [1,B,'fireball',A], [2,B,'meteor',A], [CLOSED_BODY_END+.2,B,'basic',A], [CLOSED_BODY_END+1.2,A,'braceOff',A]] as Step[]).sort((a,b)=>a[0]-b[0]),
+    prep: w => { w.pillars=[]; w.wizards[B].spells.meteor=1; } },
   geyser: { pos: [v(-1.5, 0), v(0, 0), v(1.5, 0), v(-4, 0)], end: 4.5,
     steps: [[.4,A,'geyser',v(0,0)],[.9,B,'move',v(0,4)],[.9,3,'fireball',v(4,0)],[1,B,'fireball',A],[3.3,B,'move',v(0,3)]],
     prep: w => { w.pillars=[]; w.wizards[A].team=w.wizards[B].team=0; w.wizards[C].team=1; } },
@@ -76,6 +80,7 @@ type DemoState = { w: World; script: Script; next: number; events: SimEvent[] };
 
 // Rótulos seguem os estados reais para a prévia não sugerir que stun, prisão e postura têm o mesmo bloqueio.
 export function demoStatus(w: World, z: Wizard): string[] {
+  if (w.t < (z.closedBodyUntil ?? 0) && bracingActive(w,z)) return [t('Corpo fechado · dano/empurrão/status −90%', 'Closed Body · damage/knockback/status −90%')];
   if ((z.geyserLeft ?? 0) > 0) return [t('suspenso · invulnerável · sem ações', 'suspended · invulnerable · no actions')];
   const left = (until: number) => Math.max(0, until - w.t).toLocaleString(LOCALE, { maximumFractionDigits: 1 });
   const labels: string[] = [];
@@ -264,7 +269,7 @@ export function createDemo(canvas: HTMLCanvasElement, id: DemoId, colors: string
       if (w.t < z.slowUntil) circle(z.pos, WIZ_R + 0.1, null, '#78aaff');
       if (w.t < z.magnetUntil) circle(z.pos, WIZ_R + 0.22, null, z.magnet > 0 ? '#ff5ad1' : '#9be7ff', true);
       if (w.t < z.rushUntil) circle(z.pos, WIZ_R + 0.12, null, '#ffb347');
-      circle(z.pos, WIZ_R, colors[i % colors.length], i === A ? '#ffd666' : '#1a0c08');
+      circle(z.pos, WIZ_R, w.t < (z.closedBodyUntil ?? 0) && bracingActive(w,z) ? '#090909' : colors[i % colors.length], i === A ? '#ffd666' : '#1a0c08');
       line(z.pos, add(z.pos, scale(v(Math.cos(z.facing), Math.sin(z.facing)), WIZ_R)), '#1a0c08', 0.06);
       // vida em cima do mago
       ctx.fillStyle = '#1a0c08';

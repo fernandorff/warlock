@@ -196,6 +196,13 @@ Menu principal (issue #83, PR #85):
   wrench.svg: desenho vetorial original criado para esta contribuição por Codex.
   A logo da barra é o warlock-wars.svg (o mesmo do ícone da aba, já creditado acima).
 
+Áudios enviados por Leonard,24/10/2026, declarados CC0 pelo usuário:
+  sfx/closed_body.mp3: original "corpo fechado.mp3", gravação anterior preservada, fora da reprodução.
+  sfx/closed_body_start.mp3 e sfx/closed_body_end.mp3: "corpo fechado começo.mp3"
+  e "corpo fechado fim.mp3", enviados como substituição para começo e término de Corpo fechado.
+  sfx/brace_activation.mp3: original "manter base.mp3", ativação de Manter base.
+  Ambos usam o nivelamento do mixer comum; apenas Manter base troca o som anterior.
+
 Gravações de provocações de Leonard (lboesmans), 21/10/2026 (PR #243, aceitas pelo Fernando):
   taunts-local/{fausto,emafia,meestruparam,usarameabusaram,lanchado}.mp4.
   O colaborador declarou ter gravado os áudios no próprio celular e ser o autor,

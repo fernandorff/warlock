@@ -1,7 +1,7 @@
 import { FRICTION, KB_PER_DMG, UNIT, WIZ_SPEED } from './constants.ts';
 
 export const SPELL_IDS = ['fireball', 'lightning', 'homing', 'shield', 'teleport', 'swap', 'grip', 'meteor', 'rush', 'cluster', 'boomerang', 'thrust', 'gravity', 'rockpillar', 'bouncer',
-  'drain', 'snowball', 'illusion', 'magnetize', 'recharge', 'alteration', 'link', 'windwalk', 'splitter', 'warpzone', 'scourge', 'pact', 'heal', 'geyser'] as const;
+  'drain', 'snowball', 'illusion', 'magnetize', 'recharge', 'alteration', 'link', 'windwalk', 'splitter', 'warpzone', 'scourge', 'pact', 'heal', 'geyser', 'closedbody'] as const;
 export type SpellId = (typeof SPELL_IDS)[number];
 export const isSpell = (x: unknown): x is SpellId => SPELL_IDS.includes(x as SpellId);
 // 8 magias por mago nas teclas 1 2 3 4 Q W E R (decisão do Fernando, 21/10, issue #217; antes 6); a Bola de fogo e o Flagelo contam
@@ -11,7 +11,7 @@ export const MAX_SPELLS = 8;
 export const SPELL_GROUP_IDS = {
   attack: ['fireball', 'lightning', 'homing', 'meteor', 'cluster', 'boomerang', 'bouncer', 'recharge', 'splitter', 'snowball', 'scourge', 'pact'],
   mobility: ['teleport', 'swap', 'rush', 'thrust', 'windwalk'],
-  defense: ['shield', 'alteration', 'warpzone', 'rockpillar', 'illusion'],
+  defense: ['shield', 'alteration', 'warpzone', 'rockpillar', 'illusion', 'closedbody'],
   control: ['grip', 'gravity', 'link', 'magnetize', 'drain'],
   support: ['heal', 'geyser'],
 } as const satisfies Record<string, readonly SpellId[]>;
@@ -93,6 +93,7 @@ export const SPELLS: Record<SpellId, Spell> = {
   // Cura/recarga/alcance definidos pelo usuário; custo comum provisório para o teste local, sem balanceamento de publicação.
   heal: { name: 'Curar', en: 'Heal', cost: 12, up: [6, 7, 8, 9, 10, 11], levels: steps(45, 6).map((heal, i) => L({ heal, cd: 20 - i, range: 10 })) },
   //24/10: área−25% pede raio×√0,75, não raio−25%; alcance reduzido a10m. CD/preço continuam provisórios.
+  closedbody: { name: 'Corpo fechado', en: 'Closed Body', cost: 12, up: [6, 7, 8, 9, 10, 11], levels: steps(3.5, .75).map(duration => L({ cd: 20, duration })) }, // duração pedida por nível; custo/CD provisórios do teste local.
   geyser: { name: 'Gêiser', en: 'Geyser', cost: 12, up: [6, 7, 8, 9, 10, 11], levels: steps(20, 0).map(cd => L({ cd, duration: 2.5, radius: 1.5 * Math.sqrt(.75), range: 10 })) },
 };
 
@@ -157,7 +158,7 @@ export const SPLITTER = { spawnSpeed: 250 * UNIT, spawnLife: 0.48, waves: 4, chi
 // tempo de conjuração: a magia sai esse tempo depois da tecla (AbilityCastPoint do original era 0,2 s)
 export const CAST_POINT: Record<SpellId, number> = { fireball: 0.1, lightning: 0.1, homing: 0.1, shield: 0, teleport: 0, swap: 0, grip: 0.1, meteor: 0.1, rush: 0, cluster: 0.1, boomerang: 0.1, thrust: 0, gravity: 0.1, rockpillar: 0, bouncer: 0.1,
   drain: 0.1, snowball: 0.1, illusion: 0, magnetize: 0.1, recharge: 0.1, alteration: 0, link: 0.1, windwalk: 0, splitter: 0, warpzone: 0.1,
-  scourge: 0.5, pact: 0.1, heal: 0, geyser: 0.1 }; // Curar instantânea para o teste local; Gêiser usa preparo comum.
+  scourge: 0.5, pact: 0.1, heal: 0, geyser: 0.1, closedbody: 0 }; // Curar instantânea para o teste local; Gêiser usa preparo comum.
 
 export const spellLevel = (id: SpellId, level: number): Level => SPELLS[id].levels[Math.max(1, Math.min(MAX_SPELL_LEVEL, level)) - 1];
 
@@ -172,3 +173,4 @@ export const FREE_SPELLS: SpellId[] = ['fireball', 'scourge'];
 export const noSpells = (): Record<SpellId, number> => ({ ...Object.fromEntries(SPELL_IDS.map((s) => [s, 0])), fireball: 1, scourge: 1 }) as Record<SpellId, number>;
 
 export const spellCount = (spells: Record<SpellId, number>) => SPELL_IDS.filter((s) => spells[s] > 0).length;
+export const CLOSED_BODY = { damage: .1, statusDuration: .1, knock: .1 }; // resistência de90% aos novos efeitos; não limpa os anteriores.

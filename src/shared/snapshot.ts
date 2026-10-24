@@ -1,6 +1,6 @@
 // Estado compacto enviado 30 vezes por segundo, e a leitura dele no navegador.
 import type { Snap } from './protocol.ts';
-import { PROJ_KINDS, bootsBonus, bracingActive, incapacitatedUntil, isStunned, isSuspended, type ProjKind, type SimEvent, type World } from './sim.ts';
+import { PROJ_KINDS, closedBodyActive, bootsBonus, bracingActive, incapacitatedUntil, isStunned, isSuspended, type ProjKind, type SimEvent, type World } from './sim.ts';
 import { INCAPACITATED_BIT, ELECTROCUTED_BIT, BRACING_BIT } from './constants.ts';
 import { CHEST, OBSTACLES, OBSTACLE_KINDS, RUNE_KINDS, WIZ_R, type ObstacleKind, type RuneKind } from './constants.ts';
 import { SPELL_IDS, spellLevel } from './spells.ts';
@@ -81,6 +81,7 @@ export function encodeSnap(w: World, forId: string, ack: number, events: SimEven
   }
   if (ab.some((x) => x > 0)) snap.ab = ab;
   // Prazo opcional separado: suspensão não é stun nem ocupa outro bit de32bits.
+  if (w.wizards.some(z => closedBodyActive(w, z))) snap.cb = w.wizards.map((z, i) => z.alive && !(wz[i * 7 + 6] & 2048) && closedBodyActive(w, z) ? r2(z.closedBodyUntil! - w.t) : 0);
   if (w.wizards.some(isSuspended)) snap.gy = w.wizards.map((z, i) => z.alive && !(wz[i * 7 + 6] & 2048) ? r2(z.geyserLeft ?? 0) : 0);
   if (w.wizards.some((z) => z.basicCasting)) snap.ba = w.wizards.flatMap((z, i) => z.alive && !(wz[i * 7 + 6] & 2048) && z.basicCasting ? [r2(Math.max(0, z.basicCasting.fireAt - w.t)), +z.basicCasting.melee] : [0, 0]);
   if (w.wizards.some((z) => (z.recoveryLeft ?? 0) > 0)) snap.kr = w.wizards.map((z) => r2(z.recoveryLeft ?? 0));
@@ -112,7 +113,7 @@ export function encodeSnap(w: World, forId: string, ack: number, events: SimEven
   return snap;
 }
 
-export type WizView = { id: string; pos: Vec; vel: Vec; hp: number; facing: number; alive: boolean; shield: boolean; status: number; geyserLeft?: number; rushLeft?: number; recoveryLeft?: number; stunLeft?: number; basicLeft?: number; basicMelee?: boolean };
+export type WizView = { id: string; pos: Vec; vel: Vec; hp: number; facing: number; alive: boolean; shield: boolean; status: number; closedBodyLeft?: number; geyserLeft?: number; rushLeft?: number; recoveryLeft?: number; stunLeft?: number; basicLeft?: number; basicMelee?: boolean };
 // meteor, grip e warpzone: vel = (raio, segundos que faltam); link: posição do dono; illusion: índice do dono e direção
 export type ProjView = { id: number; kind: ProjKind; pos: Vec; vel: Vec };
 export type PillarView = { pos: Vec; hp: number; kind: ObstacleKind };
@@ -125,7 +126,7 @@ const rows = (a: number[] | undefined, n: number) => Array.from({ length: Math.f
 
 export function decodeSnap(s: Snap, ids: string[]): SnapView {
   const wizards = rows(s.w, 7).slice(0, ids.length).map(([x, y, vx, vy, hp, facing, bits], i): WizView =>
-    ({ id: ids[i], pos: v(x, y), vel: v(vx, vy), hp, facing, alive: (bits & 1) > 0, shield: (bits & 2) > 0, status: bits, geyserLeft: s.gy?.[i] ?? 0, rushLeft: s.ab?.[i] ?? 0, recoveryLeft: s.kr?.[i] ?? 0, stunLeft: s.st && s.st[i] >= 0 ? s.st[i] : undefined, basicLeft: s.ba?.[i * 2] ?? 0, basicMelee: !!s.ba?.[i * 2 + 1] }));
+    ({ id: ids[i], pos: v(x, y), vel: v(vx, vy), hp, facing, alive: (bits & 1) > 0, shield: (bits & 2) > 0, status: bits, closedBodyLeft: s.cb?.[i] ?? 0, geyserLeft: s.gy?.[i] ?? 0, rushLeft: s.ab?.[i] ?? 0, recoveryLeft: s.kr?.[i] ?? 0, stunLeft: s.st && s.st[i] >= 0 ? s.st[i] : undefined, basicLeft: s.ba?.[i * 2] ?? 0, basicMelee: !!s.ba?.[i * 2 + 1] }));
   const projectiles = rows(s.p, 6).map(([id, kind, x, y, vx, vy]): ProjView => ({ id, kind: PROJ_KINDS[kind] ?? 'fireball', pos: v(x, y), vel: v(vx, vy) }));
   const pillars = rows(s.pl, 4).map(([x, y, hp, k]): PillarView => ({ pos: v(x, y), hp, kind: OBSTACLE_KINDS[k] ?? 'pillar' }));
   const runes = rows(s.ru, 3).map(([x, y, k]): RuneView => ({ pos: v(x, y), kind: RUNE_KINDS[k] ?? 'haste' }));

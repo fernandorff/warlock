@@ -446,7 +446,7 @@ export function botCmds(w: World, id: string, rand: () => number, D: BotSkill = 
   let now: (() => Cmd[]) | null = null;
   let meteor: (() => Cmd[]) | null = null;
   for (const s of SPELL_IDS) {
-    if (!ready(s) || s === 'shield' || s === 'swap' || s === 'alteration' || s === 'scourge' || s === 'pact') continue; // Escudo, Troca e Alteração só na defesa (e na borda); Flagelo e Pacto logo abaixo
+    if (!ready(s) || s === 'closedbody' || s === 'shield' || s === 'swap' || s === 'alteration' || s === 'scourge' || s === 'pact') continue; // Escudo, Troca e Alteração só na defesa (e na borda); Flagelo e Pacto logo abaixo
     const L = spellLevel(s, me.spells[s]);
     const cp = CAST_POINT[s] ?? 0.1;
     let at: Vec | null = null;

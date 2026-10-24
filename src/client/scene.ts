@@ -37,7 +37,7 @@ export const BOT_LEVEL: Record<MatchOpts['difficulty'], string> = { easy: t('Fá
 
 // xp: Ascensão, nível e quanto do nível já encheu (liveLevel), para a barrinha embaixo da vida
 // place: colocação no placar (1 a 3) para a medalha à esquerda do nome (todos os modos, fora da sandbox)
-export type WizDraw = { geyserLeft?: number; place?: number; xp?: { level: number; frac: number } | null; id: string; pos: Vec; facing: number; hp: number; hpMax: number; status: number; alive: boolean; shield: boolean; shieldR?: number; rushLeft?: number; basicLeft?: number; basicMelee?: boolean; regen?: number; bot?: MatchOpts['difficulty'] | null; loot?: number; color: number; character: string; look?: string; name: string; moving: boolean; cheer: boolean; team?: number | null; illusion?: boolean; ghost?: boolean; fx?: number[] }; // ghost: meio transparente; fx: tempo dos meus efeitos (snap.fx), só no meu mago
+export type WizDraw = { closedBodyLeft?: number; geyserLeft?: number; place?: number; xp?: { level: number; frac: number } | null; id: string; pos: Vec; facing: number; hp: number; hpMax: number; status: number; alive: boolean; shield: boolean; shieldR?: number; rushLeft?: number; basicLeft?: number; basicMelee?: boolean; regen?: number; bot?: MatchOpts['difficulty'] | null; loot?: number; color: number; character: string; look?: string; name: string; moving: boolean; cheer: boolean; team?: number | null; illusion?: boolean; ghost?: boolean; fx?: number[] }; // ghost: meio transparente; fx: tempo dos meus efeitos (snap.fx), só no meu mago
 
 // personagens KayKit: cada GLB carrega na primeira vez que alguém usa uma peça dele
 export type Model = { scene: THREE.Group; clips: THREE.AnimationClip[] };
@@ -924,7 +924,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
   const SUMMON: [string, number, number] = ['Ranged_Magic_Summon', 0.8, 3.1];
   const SPIN: [string, number] = ['2H_Melee_Attack_Spinning', 0.67];
   const CAST_ANIM: Record<string, [string, number, number?]> = {
-    shield: ['Block', 0.6], rush: ['Dodge_Forward', 0.4], teleport: ['Dodge_Forward', 0.4], windwalk: ['Dodge_Backward', 0.4], grip: ['Throw', 0.6, 0.45],
+    closedbody: ['Block', 0.6], shield: ['Block', 0.6], rush: ['Dodge_Forward', 0.4], teleport: ['Dodge_Forward', 0.4], windwalk: ['Dodge_Backward', 0.4], grip: ['Throw', 0.6, 0.45],
     meteor: SUMMON, rockpillar: SUMMON, warpzone: SUMMON, drain: ['Spellcast_Long', 0.9, 0.3], thrust: ['Unarmed_Melee_Attack_Kick', 0.5, 0.2],
     gravity: SPIN, cluster: SPIN,
     // Flagelo: o giro mais forte vai de ~0,6 a ~0,9 s do clip; começando em 0,15 ele cai junto com a explosão (preparo de 0,5 s)
@@ -1880,6 +1880,8 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
           x.m.emissiveIntensity = x.i;
         }
       }
+      // Materiais clonados: escurece só este mago e restaura a cor própria ao terminar.
+      if (d.alive) for (const x of m.mats) x.m.color.copy(x.col).multiplyScalar((d.closedBodyLeft ?? 0) > 0 ? .08 : 1);
       m.burning = burning;
       m.electro = electro;
       // clarão branco do golpe: some em ~0,15 s
@@ -1895,6 +1897,7 @@ export function createScene(canvas: HTMLCanvasElement, labels: HTMLElement) {
           }
         }
       }
+      if (d.alive && (d.closedBodyLeft ?? 0) > 0) for (const x of m.mats) x.m.emissiveIntensity = 0;
       m.label.hidden = !d.alive || hidden;
       // ícones de efeito em cima do mago (negativos primeiro)
       if (m.statusKey !== d.status) {

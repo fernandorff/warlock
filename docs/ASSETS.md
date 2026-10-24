@@ -56,6 +56,15 @@ Curar (teste local24/10): coral “ooooh” original sintetizado em `src/client/
   - Nome de cada arquivo, por categoria: [`assets/sons-rpg/INDICE.md`](../assets/sons-rpg/INDICE.md) (ex.: `FlameStrike`, `FireBallMissile`, `MetalHeavySlice`).
 - Para levar um modelo ao jogo: copie para `public/models/`, corte o que não usa, ponha o crédito no `public/CREDITS.txt` e uma linha na tabela "No jogo" acima.
 
+## Áudios enviados em24/10
+
+| Asset | Uso | Origem/licença |
+|---|---|---|
+| public/sfx/closed_body.mp3 | Gravação anterior preservada, não pré-carregada | "corpo fechado.mp3", enviado pelo usuário, declarado CC0 |
+| public/sfx/closed_body_start.mp3 | sound.ts: começo confirmado de Corpo fechado | "corpo fechado começo.mp3", enviado pelo usuário como substituição do áudio CC0 |
+| public/sfx/closed_body_end.mp3 | sound.ts: término confirmado, expiração ou soltura | "corpo fechado fim.mp3", enviado pelo usuário como substituição do áudio CC0 |
+| public/sfx/brace_activation.mp3 | sound.ts: ativação de Manter base após0,5s | "manter base.mp3", enviado pelo usuário, declarado CC0; substitui whoosh anterior |
+
 ## Regra: todo asset novo é indexado, explicado e referenciado
 
 ### Aviso de Manter base

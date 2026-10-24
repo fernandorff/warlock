@@ -30,6 +30,7 @@ import { createPredict } from './predict.ts';
 import { createScene, type WizDraw } from './scene.ts';
 import { createSound, type SoundKind } from './sound.ts';
 import { distanceVolume } from './sound-distance.ts';
+import { closedBodySound } from './closed-body-sound.ts';
 import { BRACING_BIT } from '../shared/constants.ts';
 import { store } from './store.ts';
 import { SANDBOX_START } from './train.ts';
@@ -66,6 +67,7 @@ const IR_CONFIG = IR.find((p) => p.startsWith('config:'))?.slice(7);
 
 // som de cada magia: as novas reaproveitam os sons que já existem
 const SPELL_SOUND: Record<SpellId, SoundKind> = {
+  closedbody: 'closedbody',
   geyser: 'splash',
   heal: 'heal',
   fireball: 'fireball', lightning: 'lightning', homing: 'homing', shield: 'shield', teleport: 'teleport',
@@ -418,6 +420,7 @@ function startRoom(code: string, name: string) {
     cast(spell, at) {
       if ((myWizard(interp.latest())?.geyserLeft ?? 0) > 0) return;
       const state = myWizard(interp.latest())?.status ?? 0;
+      if (spell === 'closedbody' && !(state & BRACING_BIT)) return toast(t('Ative Manter base antes de usar Corpo fechado.', 'Activate Hold Ground before using Closed Body.'));
       if (castBlocked(!!(state & 16), !!(state & 128), spell)) return;
       const i = SPELL_IDS.indexOf(spell);
       const mine = room?.players.find((p) => p.id === me);
@@ -440,8 +443,8 @@ function startRoom(code: string, name: string) {
       // conjurando, o mago fica parado e o clique de andar espera a magia sair (o servidor faz o mesmo)
       predict.hold(CAST_POINT[spell]);
       scene.castLocal(me, spell, at);
-      if (spell !== 'heal') scene.clickMarker(at, true); // o marcador ofensivo laranja não pertence à cura.
-      if (spell !== 'heal') sound.play(SPELL_SOUND[spell]); // cura toca uma vez, na confirmação e posição do alvo.
+      if (spell !== 'heal' && spell !== 'closedbody') scene.clickMarker(at, true); // o marcador ofensivo laranja não pertence à cura.
+      if (spell !== 'heal' && spell !== 'closedbody') sound.play(SPELL_SOUND[spell]); // cura toca uma vez, na confirmação e posição do alvo.
       return true;
     },
     center: () => {
@@ -595,7 +598,7 @@ function startRoom(code: string, name: string) {
       if (e.k === 'hit' && e.id === me && e.dmg >= 60) rumble(Math.min(1, e.dmg / 160), 200);
       else if (e.k === 'death' && e.id === me) rumble(1, 500);
       if (e.k === 'heal') sound.play('heal', near(e.x, e.y));
-      else if (e.k === 'cast' && e.id !== me && e.spell !== 'heal') {
+      else if (e.k === 'cast' && e.id !== me && e.spell !== 'heal' && e.spell !== 'closedbody') {
         sound.play(SPELL_SOUND[e.spell], volumeOf(e.id));
       } else if (e.k === 'hit') sound.play(e.dmg >= 100 ? 'hitHeavy' : e.dmg < 50 ? 'hitLight' : 'hit', near(e.x, e.y));
       else if (e.k === 'pillar') sound.play('hit', near(e.x, e.y) * 0.6);
@@ -732,6 +735,11 @@ function startRoom(code: string, name: string) {
     const braceNow = ownIndex >= 0 && !!(m.w[ownIndex * 7 + 6] & BRACING_BIT);
     const braceBefore = ownIndex >= 0 && !!((lastSnap?.w[ownIndex * 7 + 6] ?? 0) & BRACING_BIT);
     if (braceNow && !braceBefore) sound.play('brace'); // ativa junto dos efeitos autoritativos, nunca durante o preparo.
+    // Percorre os ids, não só cb: o campo some no último término. Invisibilidade não denuncia posição.
+    room?.ids.forEach((id, i) => {
+      const cue = closedBodySound(lastSnap?.cb?.[i], m.cb?.[i]);
+      if (cue && !(m.w[i * 7 + 6] & 2048)) sound.play(cue, volumeOf(id));
+    });
     lastSnap = m;
     predict.setSpeed(m.sp);
     const acked = sentAt.get(m.ack);

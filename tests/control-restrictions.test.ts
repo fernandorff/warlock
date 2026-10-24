@@ -16,6 +16,7 @@ describe('stun e agarramento: bloqueios autoritativos', () => {
   it.each(SPELL_IDS)('Agarrar aplica a classificação de movimento a %s', (spell) => {
     const w = world([[0, 0]], { ...noSpells(), [spell]: 1 }, [], () => .5);
     const z = w.wizards[0]; z.gripUntil = 5;
+    if (spell === 'closedbody') { z.braceReadyAt = 0; z.braceUntil = 1; }
     stepWorld(w, [{ id: z.id, kind: 'cast', spell, at: spell === 'heal' ? z.pos : v(3, 0) }], () => .5);
     const blocked = spellGroup(spell) === 'mobility';
     expect(castBlocked(false, true, spell)).toBe(blocked);
