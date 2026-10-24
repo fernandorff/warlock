@@ -977,7 +977,7 @@ body.replaying .peek-shop { display: none; }
 .shop-items .shop-group .shop-head { border-bottom-color: var(--item-line); }
 
 /* uma cor por grupo de magia (Fernando, 19/10): Ataque vermelho-laranja, Mobilidade verde, Defesa azul, Controle roxo */
-.g-ataque { --g: #ff6b4a; } .g-mobilidade { --g: #8be36a; } .g-defesa { --g: #5fb0ff; } .g-controle { --g: #c58bff; }
+.g-ataque { --g: #ff6b4a; } .g-mobilidade { --g: var(--gold); } .g-defesa { --g: #5fb0ff; } .g-controle { --g: #c58bff; } .g-suporte { --g: #8be36a; }
 .shop-group[class*="g-"] .shop-head h3 { color: var(--g); }
 .shop-group[class*="g-"] .shop-head { border-bottom-color: color-mix(in srgb, var(--g) 45%, transparent); }
 .spellbar .spell[class*="g-"] { border-color: color-mix(in srgb, var(--g) 55%, transparent); }

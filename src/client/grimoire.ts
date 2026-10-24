@@ -236,7 +236,7 @@ export function library(onOpen?: () => void): HTMLElement {
   const filters = el('div', {});
   function apply() {
     filters.replaceChildren(choice(t('Grupo', 'Group'), [['all', t('Todos', 'All')], ...SPELL_GROUPS.map(([g]): [string, string] => [g, g]), ['items', CH.items]], only, (k) => ((only = k), apply())));
-    searchFilter(groups, '.lib-tile', search.value, (g) => only !== 'all' && g.dataset.filter !== only);
+    searchFilter(groups, '.lib-tile', search.value, (g) => only !== 'all' && g.dataset.filter !== only, true);
     none.hidden = groups.some((g) => !g.hidden);
   }
   apply();
