@@ -53,7 +53,7 @@ npx vite build                      # build do cliente (dist/)
 ## Decisões de produto (não desfazer sem combinar numa issue)
 
 - Menu principal em barra (issue #83): logo W do ícone da aba (leva ao Início) · Jogar · Aprender · Guarda-roupas · Loja (vitrine, sem preço nem compra) · Perfil, com Configurações como ícone (o botão de sair saiu em 22/10, issue #201). Menus enxutos.
-- Loja em grade com o nome dentro do ícone e preço com moeda; cores por grupo (Ataque vermelho-laranja, Mobilidade verde, Defesa azul, Controle roxo, Itens prateado); 10 magias de ataque e 5 de cada outro grupo.
+- Loja em grade com o nome dentro do ícone e preço com moeda; cores por grupo (Ataque vermelho-laranja, Mobilidade dourado, Defesa azul, Controle roxo, Suporte verde, Itens prateado); 10 magias de ataque e 5 de cada outro grupo.
 - Sala sem opção de ritmo nem de morte súbita (sempre ligada); dificuldade escolhida bot a bot.
 - Baús: no máximo metade dos magos + 1 por rodada, nunca mais que 3; o monte dá 3 a 5 de ouro. Escudo com recarga de 16 s. Drenar só muda depois de partidas reais. Ataques fortes e raros (não encurtar recargas).
 - Recusados: ranking/perfil e itens que só ajudam uma magia específica.
@@ -185,6 +185,7 @@ Toda decisão nova entra aqui (data, decisão, porquê); se mudar o jeito de cod
 | 23/10 | **Guia de contribuição único, em inglês**: o `CONTRIBUTING.md` reúne máquina, fluxo, testes, revisão e balanceamento para gente e para agentes, e o `docs/GUIA-COLABORADOR.md` sai. O jogo segue nas duas línguas | decisão do Fernando: um guia só, sem duas cópias que se desencontram |
 | 24/10 | `scripts/CLAUDE.md` em inglês; os demais `CLAUDE.md` mantêm o idioma já usado na pasta | pedido do Fernando na revisão do PR #339 (typecheck dos scripts de balanceamento): guia de scripts em inglês |
 | 24/10 | **English is the default repository language** for commits, code comments, PR titles and descriptions, and new documentation. Translate the existing documentation after the currently open PRs merge; until then, keep documentation changes scoped. The in-game UI remains bilingual. The automated review reports **Blockers** and **Nits** in English, and the required `review` check passes only when its latest comment for the commit ends with `Merge gate: CLEAR`. Replaces the 20/10 rule of Portuguese code comments and the 23/10 note on Portuguese commits | approved by Fernando on 24/10 (PR #353 as a whole) to make collaboration and PR review easier |
+| 24/10 | **Support spell group** (PR #343): a fifth group, Support, in green, shown even while it has no spells; **Mobility turns gold**. Replaces the 19/10 colour of Mobility (green) | approved by Fernando on 24/10 as proposed |
 
 ## Fluxo com agente
 
